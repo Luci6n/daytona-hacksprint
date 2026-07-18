@@ -17,9 +17,9 @@ enum APIConfig {
            let url = URL(string: env) {
             return url
         }
-        // Daytona signed preview (live providers). Re-deploy if expired / sandbox deleted.
-        // Local LAN: return URL(string: "http://YOUR_MAC_IP:8000")!
-        return URL(string: "http://10.244.57.152:8000")!
+        // Public Daytona (DEMO_MODE=true → reliable fixture). Re-deploy if expired.
+        // For live vision on Mac: http://YOUR_WIFI_IP:8000 with local uvicorn.
+        return URL(string: "https://8000-u8mwnhxfpzuttscl.daytonaproxy01.net")!
     }()
 
     /// WebSocket base derived from HTTP(S) base.
