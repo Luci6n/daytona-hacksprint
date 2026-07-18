@@ -3,7 +3,7 @@ from backend.daytona_sandbox import build_daytona, parse_args, sandbox_environme
 
 
 def test_sandbox_environment_excludes_daytona_control_credentials() -> None:
-    settings = Settings(
+    settings = Settings(  # type: ignore[call-arg]
         _env_file=None,
         demo_mode=False,
         daytona_api_key="control-plane-secret",
@@ -30,7 +30,10 @@ def test_deploy_cli_defaults_to_feature_branch_and_six_hour_ttl() -> None:
 
 
 def test_daytona_client_requires_control_plane_key() -> None:
-    settings = Settings(_env_file=None, daytona_api_key=None)
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        daytona_api_key=None,
+    )
 
     try:
         build_daytona(settings)

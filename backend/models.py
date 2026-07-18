@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 from pydantic.alias_generators import to_camel
 
 
@@ -20,21 +22,46 @@ class SpeechRequest(APIModel):
     text: str = Field(min_length=1, max_length=2_000)
 
 
+class LiveFrameEvent(APIModel):
+    type: Literal["frame"]
+    image_base64: str = Field(min_length=1, max_length=20_000_000)
+    device_hint: str | None = Field(default=None, max_length=500)
+
+
+class LiveUtteranceEvent(APIModel):
+    type: Literal["utterance"]
+    text: str = Field(min_length=1, max_length=2_000)
+
+
+class LiveInterruptEvent(APIModel):
+    type: Literal["interrupt"]
+    turn_id: str = Field(min_length=1, max_length=100)
+
+
+LiveClientEvent = Annotated[
+    LiveFrameEvent | LiveUtteranceEvent | LiveInterruptEvent,
+    Field(discriminator="type"),
+]
+live_client_event_adapter: TypeAdapter[LiveClientEvent] = TypeAdapter(
+    LiveClientEvent
+)
+
+
 class ARAnnotation(APIModel):
-    type: str
-    x: float
-    y: float
+    type: Literal["highlight", "arrow", "circle", "text"]
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
     z: float | None = None
-    width: float | None = None
-    height: float | None = None
-    label: str
+    width: float | None = Field(default=None, ge=0, le=1)
+    height: float | None = Field(default=None, ge=0, le=1)
+    label: str = Field(min_length=1, max_length=500)
     color: str | None = None
 
 
 class RepairStep(APIModel):
-    step: int
-    instruction: str
-    safety_note: str | None = None
+    step: int = Field(ge=1)
+    instruction: str = Field(min_length=1, max_length=2_000)
+    safety_note: str = Field(min_length=1, max_length=2_000)
 
 
 class BuyablePart(APIModel):
@@ -45,8 +72,8 @@ class BuyablePart(APIModel):
 
 
 class AnalysisResult(APIModel):
-    detected_item: str
-    confidence: float
+    detected_item: str = Field(min_length=1, max_length=500)
+    confidence: float = Field(ge=0, le=1)
     issues: list[str]
     ar_annotations: list[ARAnnotation]
     repair_steps: list[RepairStep]

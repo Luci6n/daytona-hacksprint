@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from backend.provider_errors import (
@@ -9,6 +10,17 @@ from backend.provider_errors import (
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_error_handler(
+        _request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        messages = []
+        for error in exc.errors():
+            location = ".".join(str(part) for part in error["loc"])
+            messages.append(f"{location}: {error['msg']}")
+        detail = "; ".join(messages) or "Invalid request."
+        return JSONResponse(status_code=422, content={"detail": detail})
+
     @app.exception_handler(ValueError)
     async def value_error_handler(_request: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})

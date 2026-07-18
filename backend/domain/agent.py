@@ -28,7 +28,11 @@ class DaddyAgent:
         self._demo_mode = demo_mode
         self._providers = providers
 
-    def analyze(self, request: AnalyzeRequest) -> AnalysisResult:
+    def analyze(
+        self,
+        request: AnalyzeRequest,
+        conversation_context: str | None = None,
+    ) -> AnalysisResult:
         if self._demo_mode:
             return water_heater_result()
         if self._providers is None:
@@ -46,11 +50,21 @@ class DaddyAgent:
             observation = self._providers.vision.inspect(request)
             visual_context = observation.model_dump_json(by_alias=True)
 
-        result = self._providers.reasoning.analyze(
-            request,
-            context,
-            visual_context=visual_context,
-        )
+        if conversation_context is None:
+            result = self._providers.reasoning.analyze(
+                request,
+                context,
+                visual_context=visual_context,
+            )
+        else:
+            result = self._providers.reasoning.analyze(
+                request,
+                context,
+                visual_context=visual_context,
+                conversation_context=conversation_context,
+            )
+
+        self._ensure_minimum_safety(result)
 
         if self._providers.safety is not None:
             verdict = self._providers.safety.validate(result)
@@ -61,3 +75,16 @@ class DaddyAgent:
                 )
 
         return result
+
+    @staticmethod
+    def _ensure_minimum_safety(result: AnalysisResult) -> None:
+        if not result.repair_steps:
+            raise UnsafeGuidanceError(
+                "Safety validation rejected repair guidance without repair steps."
+            )
+        if not any(
+            "licensed " in step.safety_note.lower() for step in result.repair_steps
+        ):
+            raise UnsafeGuidanceError(
+                "Safety validation requires a licensed professional stop condition."
+            )

@@ -1,7 +1,10 @@
+import pytest
+
 from backend.demo import water_heater_result
 from backend.domain.agent import AgentProviders, DaddyAgent
 from backend.domain.ports import SafetyVerdict
-from backend.models import AnalysisResult, AnalyzeRequest, VisionObservation
+from backend.models import AnalysisResult, AnalyzeRequest, RepairStep, VisionObservation
+from backend.provider_errors import UnsafeGuidanceError
 
 
 def test_live_agent_orchestrates_injected_providers_in_order() -> None:
@@ -33,11 +36,13 @@ def test_live_agent_orchestrates_injected_providers_in_order() -> None:
             request: AnalyzeRequest,
             repair_context: str,
             visual_context: str | None = None,
+            conversation_context: str | None = None,
         ) -> AnalysisResult:
             calls.append("reasoning")
             assert repair_context == "verified manual context"
             assert visual_context is not None
             assert "ELCB appears tripped" in visual_context
+            assert conversation_context is None
             return expected
 
     class Safety:
@@ -66,3 +71,43 @@ def test_demo_agent_does_not_require_provider_dependencies() -> None:
     result = DaddyAgent(demo_mode=True).analyze(AnalyzeRequest())
 
     assert result.detected_item == "Rinnai Tankless Water Heater"
+
+
+def test_live_agent_rejects_guidance_without_professional_stop_condition() -> None:
+    class RepairContext:
+        def search_repair_context(
+            self, device_hint: str, symptom: str | None
+        ) -> str:
+            return "verified manual context"
+
+    class Reasoning:
+        def analyze(
+            self,
+            request: AnalyzeRequest,
+            repair_context: str,
+            visual_context: str | None = None,
+            conversation_context: str | None = None,
+        ) -> AnalysisResult:
+            unsafe = water_heater_result()
+            return unsafe.model_copy(
+                update={
+                    "repair_steps": [
+                        RepairStep(
+                            step=1,
+                            instruction="Reset the breaker.",
+                            safety_note="Turn off power before touching anything.",
+                        )
+                    ]
+                }
+            )
+
+    agent = DaddyAgent(
+        demo_mode=False,
+        providers=AgentProviders(
+            repair_context=RepairContext(),
+            reasoning=Reasoning(),
+        ),
+    )
+
+    with pytest.raises(UnsafeGuidanceError, match="licensed professional"):
+        agent.analyze(AnalyzeRequest(symptom="No hot water"))

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.api.errors import register_error_handlers
+from backend.api.live import create_live_router
 from backend.api.routes import AgentFactory, SpeechFactory, create_router
 from backend.bootstrap import build_agent, build_speech_synthesizer
 from backend.config import Settings
@@ -17,11 +18,14 @@ def create_app(
     )
     app = FastAPI(
         title="DaddyFix Agent API",
-        version="0.2.0",
+        version="0.3.0",
         description="Safety-first spatial repair analysis for the DaddyFix iOS app.",
     )
     register_error_handlers(app)
     app.include_router(
         create_router(settings, resolved_agent_factory, resolved_speech_factory)
+    )
+    app.include_router(
+        create_live_router(resolved_agent_factory, resolved_speech_factory)
     )
     return app

@@ -1,7 +1,10 @@
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from backend.api.app import create_app
 from backend.config import Settings
+from backend.models import ARAnnotation, RepairStep
 
 
 class FakeSpeechSynthesizer:
@@ -84,3 +87,14 @@ def test_empty_speech_text_is_rejected_before_provider_call() -> None:
     response = client.post('/speech/synthesize', json={'text': ''})
 
     assert response.status_code == 422
+    assert isinstance(response.json()['detail'], str)
+
+
+def test_ar_coordinates_are_rejected_outside_normalized_frame() -> None:
+    with pytest.raises(ValidationError):
+        ARAnnotation(type='highlight', x=1.1, y=0.5, label='ELCB')
+
+
+def test_every_repair_step_requires_a_nonempty_safety_note() -> None:
+    with pytest.raises(ValidationError):
+        RepairStep(step=1, instruction='Reset the breaker')  # type: ignore[call-arg]

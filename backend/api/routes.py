@@ -3,12 +3,11 @@ from collections.abc import Callable
 from fastapi import APIRouter, Response
 
 from backend.config import Settings
-from backend.domain.agent import DaddyAgent
-from backend.domain.ports import SpeechSynthesizer
+from backend.domain.ports import AnalysisAgent, SpeechSynthesizer
 from backend.models import AnalysisResult, AnalyzeRequest, SpeechRequest
 
 
-AgentFactory = Callable[[], DaddyAgent]
+AgentFactory = Callable[[], AnalysisAgent]
 SpeechFactory = Callable[[], SpeechSynthesizer]
 
 

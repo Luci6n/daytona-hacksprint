@@ -45,6 +45,7 @@ class KimiReasoningClient:
         request: AnalyzeRequest,
         repair_context: str,
         visual_context: str | None = None,
+        conversation_context: str | None = None,
     ) -> AnalysisResult:
         if self._supports_vision and not request.image_base64:
             raise ValueError("imageBase64 is required when DEMO_MODE=false.")
@@ -54,6 +55,7 @@ class KimiReasoningClient:
             f"Device hint: {request.device_hint or 'Rinnai tankless water heater'}\n"
             f"Reported symptom: {request.symptom or 'Not provided'}\n"
             f"Verified visual observation: {visual_context or 'Use the supplied image'}\n"
+            f"Previous turn context: {conversation_context or 'No previous turn'}\n"
             f"Oxylabs repair context: {repair_context}\n"
             f"Required JSON schema: {schema}"
         )

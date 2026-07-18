@@ -26,6 +26,7 @@ class ReasoningProvider(Protocol):
         request: AnalyzeRequest,
         repair_context: str,
         visual_context: str | None = None,
+        conversation_context: str | None = None,
     ) -> AnalysisResult: ...
 
 
@@ -35,3 +36,11 @@ class SafetyProvider(Protocol):
 
 class SpeechSynthesizer(Protocol):
     def synthesize(self, text: str) -> bytes: ...
+
+
+class AnalysisAgent(Protocol):
+    def analyze(
+        self,
+        request: AnalyzeRequest,
+        conversation_context: str | None = None,
+    ) -> AnalysisResult: ...
