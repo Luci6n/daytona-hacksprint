@@ -6,15 +6,18 @@ Spatial AR home repair assistant (iOS LiDAR + ARKit + Daytona/Nosana/Oxylabs).
 
 - [`AGENTS.md`](./AGENTS.md) — roles, architecture, 5-hour plan  
 - [`PRD.md`](./PRD.md) — product requirements  
-- [`DaddyFix/BRIAN_SETUP.md`](./DaddyFix/BRIAN_SETUP.md) — **Brian (AR) local setup**
+- [`DaddyFix/XCODE_SETUP.md`](./DaddyFix/XCODE_SETUP.md) — **install Xcode + run on device** (Kenji / Brian)  
+- [`DaddyFix/BRIAN_SETUP.md`](./DaddyFix/BRIAN_SETUP.md) — Brian AR smoke test & coding focus
 
-## iOS app
+## iOS app (Mac only)
 
 ```bash
+# Full step-by-step: DaddyFix/XCODE_SETUP.md
 open DaddyFix/DaddyFix.xcodeproj
 ```
 
-Requires **Xcode 16+**, **iOS 18+**, and a **LiDAR iPhone** for the hero demo (simulator has no LiDAR).
+Requires **Xcode 16+**, **iOS 18+**, and a **LiDAR iPhone** for the hero demo (simulator has no LiDAR).  
+**Lucian (Windows):** skip Xcode — work on backend only.
 
 ### Team ownership
 
