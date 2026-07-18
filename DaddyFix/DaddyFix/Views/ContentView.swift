@@ -2,14 +2,15 @@
 //  ContentView.swift
 //  DaddyFix
 //
-//  Brian temporary integration shell (Kenji Xcode blocked).
-//  Embeds Brian AR + VisionService analyze/mock buttons.
+//  Kenji — real app shell. Replaces Brian's ARDebugHostView placeholder:
+//  embeds ARViewContainer full-bleed, adds Scan/Reset chrome, and wires
+//  taps → RepairGuideView / PaymentModal (see LUCIAN_INTEGRATION.md).
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @State private var app = AppState()
+    @StateObject private var app = AppState()
 
     var body: some View {
         ZStack {
@@ -22,79 +23,108 @@ struct ContentView: View {
             .ignoresSafeArea()
 
             VStack {
-                HStack {
-                    statusChip
-                    Spacer()
-                    Toggle(isOn: $app.showMeshOverlay) {
-                        Text("LiDAR mesh")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .toggleStyle(.button)
-                    .padding(8)
-                    .background(.ultraThinMaterial, in: Capsule())
-                }
-                .padding()
-
+                topBar
                 Spacer()
-
-                VStack(spacing: 10) {
-                    if let label = app.selectedPartLabel {
-                        Text("Selected: \(label)")
-                            .font(.headline)
-                    }
-                    if let item = app.analysis?.detectedItem {
-                        Text(item)
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    Text(app.statusMessage)
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                    if let err = app.lastError {
-                        Text(err)
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    HStack(spacing: 10) {
-                        Button("Analyze (API mock)") {
-                            Task { await app.analyzeMockAndPlace() }
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        Button("Local mock") {
-                            app.apply(AnalysisResult.waterHeaterMock)
-                        }
-                        .buttonStyle(.bordered)
-
-                        Button("Clear") {
-                            app.clear()
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
+                bottomBar
             }
+            .padding()
         }
         .onAppear {
-            app.wireAnnotationSelection()
+            app.raycastManager.onAnnotationSelected = { label in
+                app.selectPart(label)
+            }
+        }
+        .sheet(isPresented: $app.showRepairGuide) {
+            if let analysis = app.analysis {
+                RepairGuideView(
+                    analysis: analysis,
+                    selectedLabel: app.selectedPartLabel,
+                    onBuyTapped: {
+                        app.showRepairGuide = false
+                        app.showPayment = true
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $app.showPayment) {
+            if let part = app.analysis?.buyableParts.first {
+                PaymentModal(part: part)
+            }
         }
     }
 
-    private var statusChip: some View {
+    private var topBar: some View {
+        HStack {
+            StatusChipView(sessionManager: app.sessionManager, phase: app.phase)
+            Spacer()
+            Toggle(isOn: $app.showMeshOverlay) {
+                Text("LiDAR mesh").font(.caption.weight(.semibold))
+            }
+            .toggleStyle(.button)
+            .padding(8)
+            .background(.ultraThinMaterial, in: Capsule())
+        }
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            if let label = app.selectedPartLabel {
+                Text("Selected: \(label)")
+                    .font(.headline)
+            }
+            if let item = app.analysis?.detectedItem {
+                Text(item)
+                    .font(.subheadline.weight(.semibold))
+            }
+            Text(app.statusMessage)
+                .font(.footnote)
+                .multilineTextAlignment(.center)
+            if let lastError = app.lastError {
+                Text(lastError)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .multilineTextAlignment(.center)
+            }
+
+            HStack(spacing: 12) {
+                Button("Scan") {
+                    app.scan()
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Reset") {
+                    app.reset()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+/// Small subview that observes ARSessionManager directly — AppState being
+/// an ObservableObject doesn't re-publish when a nested ObservableObject's
+/// @Published properties change, so the live status chip needs its own
+/// @ObservedObject to update. `phase` is passed in as a value since it's
+/// read fresh from AppState on every ContentView re-render.
+private struct StatusChipView: View {
+    @ObservedObject var sessionManager: ARSessionManager
+    var phase: AppState.Phase
+
+    var body: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(statusColor)
                 .frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 2) {
-                Text(app.sessionManager.trackingStatus.rawValue)
+                Text(sessionManager.trackingStatus.rawValue)
                     .font(.caption.weight(.semibold))
-                Text(app.sessionManager.isLiDARAvailable ? "LiDAR ready" : "No LiDAR — planes only")
+                Text(sessionManager.isLiDARAvailable ? "LiDAR ready" : "No LiDAR — planes only")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                Text("phase: \(app.phase.rawValue)")
+                Text("phase: \(phase.rawValue)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -105,7 +135,7 @@ struct ContentView: View {
     }
 
     private var statusColor: Color {
-        switch app.sessionManager.trackingStatus {
+        switch sessionManager.trackingStatus {
         case .normal: return .green
         case .initializing, .relocalizing: return .yellow
         case .limited: return .orange

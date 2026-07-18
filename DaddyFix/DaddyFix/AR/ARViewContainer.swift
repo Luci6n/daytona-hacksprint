@@ -78,6 +78,7 @@ struct ARViewContainer: UIViewRepresentable {
 
     // MARK: - Coordinator
 
+    @MainActor
     final class Coordinator: NSObject {
         let sessionManager: ARSessionManager
         let raycastManager: RaycastManager
