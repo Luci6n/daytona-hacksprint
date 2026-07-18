@@ -1,30 +1,44 @@
 # DaddyFix — Daytona Hacksprint
 
-Spatial AR home repair assistant (iOS LiDAR + ARKit + Daytona/Nosana/Oxylabs).
+Spatial AR home repair on **iPhone 17 Pro LiDAR** + cloud **Daddy Agent** on **Daytona** (Kimi + Oxylabs + Nosana).
 
 ## Docs
 
-- [`AGENTS.md`](./AGENTS.md) — roles, architecture, 5-hour plan  
-- [`PRD.md`](./PRD.md) — product requirements  
-- [`DaddyFix/XCODE_SETUP.md`](./DaddyFix/XCODE_SETUP.md) — **install Xcode + run on device** (Kenji / Brian)  
-- [`DaddyFix/BRIAN_SETUP.md`](./DaddyFix/BRIAN_SETUP.md) — Brian AR smoke test & coding focus
+| Doc | Purpose |
+|-----|---------|
+| [`PRD.md`](./PRD.md) | Product, **status board**, live-stream design, **task split** |
+| [`AGENTS.md`](./AGENTS.md) | Roles, architecture, ownership, checklists |
+| [`DaddyFix/BRIAN_SETUP.md`](./DaddyFix/BRIAN_SETUP.md) | Brian on-device Xcode |
+| [`DaddyFix/LUCIAN_INTEGRATION.md`](./DaddyFix/LUCIAN_INTEGRATION.md) | AR embed notes (iOS) |
+| [`backend/README.md`](./backend/README.md) | FastAPI local / Daytona |
 
-## iOS app (Mac only)
+## How far are we? (summary)
+
+| Slice | ~Ready | Who unblocks |
+|-------|--------|--------------|
+| LiDAR AR on 17 Pro | **High** | Brian polish |
+| One-shot cloud analyze | **Medium** | Lucian Daytona URL + Kimi |
+| **Live stream events** | **Low** | Brian client + Lucian API |
+| Voice / pay UI | **Low** | Kenji (+ Brian device QA) |
+
+See **PRD §15** for detail.
+
+## Architecture (one line)
+
+Phone sends **frames/events** → **Daytona agent** reasons → phone **LiDAR-locks** annotations. Keys stay in the cloud.
+
+## Team
+
+| Person | Focus |
+|--------|--------|
+| **Brian** | AR + live capture + device ship |
+| **Lucian** | Daytona + agent + Oxylabs/Nosana/Kimi |
+| **Kenji** | Voice, guide UI, x402, demo script |
+
+## iOS
 
 ```bash
-# Full step-by-step: DaddyFix/XCODE_SETUP.md
 open DaddyFix/DaddyFix.xcodeproj
 ```
 
-Requires **Xcode 16+**, **iOS 18+**, and a **LiDAR iPhone** for the hero demo (simulator has no LiDAR).  
-**Lucian (Windows):** skip Xcode — work on backend only.
-
-### Team ownership
-
-| Person | Platform | Area |
-|--------|----------|------|
-| **Brian** | Mac | `DaddyFix/DaddyFix/AR/*` (LiDAR + RealityKit) |
-| **Kenji** | Mac | SwiftUI shell, voice, x402, `AppState`, iOS `VisionService` client |
-| **Lucian** | Windows | Backend / agent / Daytona + Nosana + Oxylabs, shared JSON contract |
-
-See [`AGENTS.md`](./AGENTS.md) for the full file ownership map.
+Real **LiDAR iPhone** required for the hero demo.
