@@ -6,12 +6,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/models/huggingface
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip libsndfile1 \
+    && apt-get install -y --no-install-recommends python3 python3-pip libsndfile1 sox \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY backend/speech_service/requirements.txt ./requirements.txt
-RUN python3 -m pip install --break-system-packages --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --break-system-packages --no-cache-dir \
+      --index-url https://download.pytorch.org/whl/cu128 \
+      torch==2.11.0+cu128 torchaudio==2.11.0+cu128 \
+    && python3 -m pip install --break-system-packages --no-cache-dir \
+      -r requirements.txt
 
 COPY backend/speech_service ./backend/speech_service
 EXPOSE 8000
