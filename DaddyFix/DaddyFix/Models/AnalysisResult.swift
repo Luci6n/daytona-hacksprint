@@ -2,7 +2,7 @@
 //  AnalysisResult.swift
 //  DaddyFix
 //
-//  Shared data contract (Kenji owns evolution; Brian consumes arAnnotations).
+//  Shared data contract (Lucian Python JSON; Brian Swift + AR consume arAnnotations).
 //  Agree changes with the team before modifying field names.
 //
 

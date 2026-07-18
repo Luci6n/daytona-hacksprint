@@ -2,7 +2,7 @@
 //  x402Service.swift
 //  DaddyFix
 //
-//  Kenji — P1. Stub that mimics the x402 flow (headers, payment required,
+//  Brian — P1. Stub that mimics the x402 flow (headers, payment required,
 //  success with tx hash) for the demo. Real on-chain only if everything
 //  else is solid (AGENTS.md §7).
 //

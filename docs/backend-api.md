@@ -1,8 +1,8 @@
 # DaddyFix backend API integration guide
 
-This document is the client contract for Kenji's `VisionService.swift` and
-`VoiceManager.swift`. The canonical response models are defined in
-`backend/models.py` and mirrored in
+This document is the client contract for Brian's iOS `VisionService.swift` and
+`VoiceManager.swift` (all Xcode is Brian; Kenji does not own Swift). The
+canonical response models are defined in `backend/models.py` and mirrored in
 `DaddyFix/DaddyFix/Models/AnalysisResult.swift`.
 
 ## Base URL and interactive documentation
@@ -371,7 +371,7 @@ Warm the TTS service before the live demo.
 
 ## Swift client contract sketch
 
-Kenji owns the actual `VisionService.swift`; this sketch documents the wire
+Brian owns the actual `VisionService.swift`; this sketch documents the wire
 format without modifying that file.
 
 ```swift

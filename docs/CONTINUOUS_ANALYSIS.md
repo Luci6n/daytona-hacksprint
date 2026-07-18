@@ -121,13 +121,34 @@ Prefer whatever he ships, e.g.:
 
 ---
 
+## Implementation status (Brian + Lucian)
+
+| Path | Status |
+|------|--------|
+| Phone **WS `/live/{id}`** 1–2s frames + auto-utterance | ✅ `LiveSessionClient` + ContentView **Live** |
+| Server **RTSP** sample every 1–2s → agent | ✅ `POST /rtsp/start`, `GET /rtsp/{id}/latest` |
+| Public Daytona URL | ❌ still Lucian/Kenji deploy |
+
+### iOS
+- **Live (1–2s frames)** → `LiveSessionClient` → Lucian WS  
+- Toggle **Live auto-analyze** → each frame also sends utterance (continuous agent reasoning)  
+- **RTSP camera…** → starts server sampler, phone polls latest → AR  
+
+### Backend
+```bash
+# RTSP (needs ffmpeg)
+curl -X POST http://127.0.0.1:8000/rtsp/start \
+  -H 'Content-Type: application/json' \
+  -d '{"rtspUrl":"rtsp://…","intervalSec":2}'
+```
+
 ## Definition of done (continuous)
 
-- [ ] Agent receives frames over **time** (1–2 s), not only one press  
-- [ ] At least **2–3** successive analyses in a live demo with updating issues or stable pin  
-- [ ] AR pins stay LiDAR-locked between updates  
-- [ ] Lucian backend is the only cloud; Brian client matches his contract  
-- [ ] Optional: RTSP cam story if URL + ffmpeg available on Daytona  
+- [x] Agent can receive frames over **time** (1–2 s) via phone WS or RTSP  
+- [ ] At least **2–3** successive analyses proven on device against real URL  
+- [x] AR re-applies pins on each analysis  
+- [ ] Public Daytona / wss proven  
+- [x] RTSP path in Lucian-style backend (ffmpeg)
 
 ---
 

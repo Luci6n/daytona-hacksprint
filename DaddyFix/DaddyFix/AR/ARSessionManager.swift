@@ -7,9 +7,12 @@
 
 import ARKit
 import Combine
+import CoreImage
+import CoreVideo
 import Foundation
 import RealityKit
 import SwiftUI
+import UIKit
 
 /// Owns the AR session configuration (LiDAR mesh + planes) and tracking status.
 @MainActor
@@ -125,6 +128,27 @@ final class ARSessionManager: NSObject, ObservableObject {
         } else {
             arView.debugOptions.remove(.showSceneUnderstanding)
         }
+    }
+
+    /// Snapshot the live AR camera for Lucian `POST /analyze` (JPEG).
+    /// Prefers `ARFrame.capturedImage` (CVPixelBuffer → UIImage).
+    func captureFrameImage() -> UIImage? {
+        guard let frame = arView?.session.currentFrame else { return nil }
+        return UIImage(pixelBuffer: frame.capturedImage)
+    }
+}
+
+// MARK: - CVPixelBuffer → UIImage
+
+private extension UIImage {
+    convenience init?(pixelBuffer: CVPixelBuffer) {
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let context = CIContext(options: nil)
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+            return nil
+        }
+        // ARKit buffer is landscape-right relative to portrait UI; rotate for upright JPEG.
+        self.init(cgImage: cgImage, scale: 1.0, orientation: .right)
     }
 }
 

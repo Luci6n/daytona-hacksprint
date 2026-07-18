@@ -1,6 +1,6 @@
 # DaddyFix — Local Xcode Install & Run Guide
 
-For **Kenji** and **Brian** (Mac).  
+For **Brian** (Mac + all Xcode). Kenji has no Xcode.  
 **Lucian is on Windows** and does **not** install Xcode — use the backend guide instead.
 
 > **LiDAR note:** The iOS Simulator has **no LiDAR**. You can compile on Simulator, but the hero demo must run on a **Pro iPhone with LiDAR**.
@@ -209,7 +209,8 @@ open DaddyFix/DaddyFix.xcodeproj
 | Person | Edit these |
 |--------|------------|
 | **Brian** | `DaddyFix/DaddyFix/AR/*` |
-| **Kenji** | Views, AppState, Voice, x402, iOS `VisionService` client |
+| **Brian** | Entire iOS app (AR + Views + Voice + VisionService + x402) |
+| **Kenji** | Ops/docs only — no Swift |
 | **Lucian** | Backend only (Windows) — no Xcode |
 
 ---

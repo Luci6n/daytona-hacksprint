@@ -99,40 +99,33 @@ See `backend/models.py` + `Models/AnalysisResult.swift`.
 
 ## 5. Task Checklist by Person
 
-### Brian (you)
+### Brian (all Xcode / iOS — no Kenji Swift)
 - [x] LiDAR session + annotations + tap  
 - [x] On-device 17 Pro  
-- [x] VisionService one-shot + AppState shell  
-- [ ] `LiveAnalysisSession` (interval capture, seq, apply AR)  
-- [ ] Wire Start/Stop Live in UI  
-- [ ] Set `APIConfig` to Lucian’s Daytona URL  
-- [ ] End-to-end one-shot + live on device  
-- [ ] Merge/test Kenji UI files  
+- [x] VisionService + VoiceManager + AppState + UI sheets  
+- [x] Live WS client (1–2s frames) + RTSP client hooks  
+- [ ] Set `APIConfig` to Lucian’s public Daytona URL  
+- [ ] End-to-end one-shot + live on device with real URL  
+- [ ] Bundle ID **`com.daddyfix.app`** / Team **Brian Har**  
 
 ### Lucian
 - [ ] Daytona deploy + public URL in team chat  
 - [ ] Sandbox env: Moonshot/Kimi, Oxylabs, Nosana  
-- [ ] Prove `/analyze` with real image  
-- [ ] Implement `/analyze/stream/event`  
+- [ ] Prove `/analyze` + live WS + TTS e2e  
 - [ ] Oxylabs parts for heater if possible  
-- [ ] Safety-first prompts for live language  
 
-### Kenji
-- [ ] `VoiceManager` + Daddy lines (safety first)  
-- [ ] `RepairGuideView`  
-- [ ] `PaymentModal` + x402 (can simulate)  
-- [ ] Demo script README for judges  
-- [ ] UI polish notes if Xcode blocked  
+### Kenji (ops only — **no Xcode, no `.swift`**)
+- [ ] Smoke `/health`, `/analyze`, TTS against deployed URL  
+- [ ] Help Daytona public URL (with Lucian)  
+- [ ] Judge one-pager / demo script (docs only)  
 
 ---
 
 ## 6. Integration Order
 
 1. Lucian → Daytona URL live  
-2. Brian → one-shot Analyze on phone  
-3. Brian + Lucian → live events  
-4. Kenji → voice + sheets  
-5. Full Demo A then Demo B (see `PRD.md` §14)  
+2. Brian → one-shot Scan + Live on phone  
+3. Full Demo A then Demo B  
 
 ---
 
@@ -142,8 +135,9 @@ See `backend/models.py` + `Models/AnalysisResult.swift`.
 - LiDAR visibly used  
 - Cloud stack story (Daytona / Kimi / Oxylabs / Nosana)  
 - Live stream = **events**, not keys on device  
-- Mock fallback if cloud dies mid-demo  
+- Explicit mock only if user chooses Local mock  
 - Test on **real device** (no LiDAR in simulator)  
+- **Kenji does not edit Swift**  
 
 ---
 
@@ -152,20 +146,20 @@ See `backend/models.py` + `Models/AnalysisResult.swift`.
 ```bash
 open DaddyFix/DaddyFix.xcodeproj
 
-# Backend local dev (not the judge path)
-cd backend && source .venv/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 8000
+# Backend (repo root, Python 3.10+)
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
+
+**Bundle ID:** `com.daddyfix.app`  
+**Team:** Brian Har (Personal Team)
 
 **Commit examples**
 ```text
 feat(ar): LiDAR session + annotation placement (Brian)
-feat(live): frame event stream client (Brian)
-feat(api): Daytona analyze + stream event (Lucian)
-feat(ui): voice + repair guide (Kenji)
+feat(live): 1-2s WS frame stream client (Brian)
+feat(api): Daytona analyze + live WS (Lucian)
 ```
 
 ---
 
-Read **`PRD.md` v0.2** for full gap analysis, live-stream design, and success metrics.  
 Ship Demo A solid first; Demo B (live) is the differentiator.

@@ -2,7 +2,7 @@
 //  PaymentModal.swift
 //  DaddyFix
 //
-//  Kenji — P1. Mimics the x402 flow: payment-required state, a pay
+//  Brian — P1. Mimics the x402 flow: payment-required state, a pay
 //  action, then success with a tx hash (AGENTS.md §7). Wire to a real
 //  on-chain call later via x402Service.
 //

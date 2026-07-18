@@ -2,7 +2,7 @@
 //  RepairGuideView.swift
 //  DaddyFix
 //
-//  Kenji — sheet shown after tapping an AR annotation. Lists numbered
+//  Brian — sheet shown after tapping an AR annotation. Lists numbered
 //  repair steps with safety notes, and a "Buy replacement" hand-off to
 //  the x402 payment flow.
 //
