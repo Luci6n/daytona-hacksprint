@@ -23,6 +23,7 @@ class SynthesisRequest(BaseModel):
 app = FastAPI(title="DaddyFix Qwen3-TTS", version="0.1.0")
 _model: Qwen3TTSModel | None = None
 _model_lock = Lock()
+_inference_lock = Lock()
 
 
 def get_model() -> Qwen3TTSModel:
@@ -52,11 +53,12 @@ def warmup() -> dict[str, str]:
 
 @app.post("/synthesize", response_class=Response)
 def synthesize(request: SynthesisRequest) -> Response:
-    wavs, sample_rate = get_model().generate_voice_design(
-        text=request.text,
-        language=request.language,
-        instruct=request.instruct,
-    )
+    with _inference_lock:
+        wavs, sample_rate = get_model().generate_voice_design(
+            text=request.text,
+            language=request.language,
+            instruct=request.instruct,
+        )
     buffer = BytesIO()
     sf.write(buffer, wavs[0], sample_rate, format="WAV")
     return Response(content=buffer.getvalue(), media_type="audio/wav")

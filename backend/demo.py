@@ -6,6 +6,7 @@ def water_heater_result() -> AnalysisResult:
     return AnalysisResult(
         detected_item="Rinnai Tankless Water Heater",
         confidence=0.94,
+        risk_level="high",
         issues=["ELCB may have tripped", "No hot water reported"],
         ar_annotations=[
             ARAnnotation(

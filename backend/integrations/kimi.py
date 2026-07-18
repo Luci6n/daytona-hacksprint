@@ -32,6 +32,9 @@ Repair rules:
   licensed professional when unsure or if the fix is electrical/gas/high-risk
 - buyableParts must match the diagnosis (e.g. AA batteries for a mouse)
 - Never invent Rinnai/ELCB unless the image clearly shows a water heater panel
+- Set riskLevel to low, medium, high, or emergency based on the visible hazard
+  and reported symptom. Gas, burning, flooding near electricity, and exposed
+  live electrical conditions are high or emergency risk.
 
 If the image is unclear, say so with low confidence and still return valid JSON.
 """

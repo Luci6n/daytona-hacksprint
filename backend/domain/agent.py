@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 
 from backend.demo import generic_unavailable_result, water_heater_result
 from backend.domain.ports import (
@@ -103,6 +104,20 @@ class DaddyAgent:
         """Do not throw away a good visual diagnosis for a missing safety phrase."""
         if not result.repair_steps:
             return result
+        guidance = " ".join(
+            f"{step.instruction} {step.safety_note}" for step in result.repair_steps
+        ).lower()
+        prohibited = (
+            "open the energized",
+            "work on live electrical",
+            "bypass the safety",
+            "bypass the breaker",
+            "do not need a licensed",
+        )
+        if any(phrase in guidance for phrase in prohibited):
+            raise UnsafeGuidanceError(
+                "Safety validation requires a licensed professional stop condition."
+            )
         licensed_line = (
             "If you are unsure or anything looks damaged/swollen/hot, stop and "
             "call a licensed professional."
@@ -110,7 +125,12 @@ class DaddyAgent:
         fixed_steps = []
         for step in result.repair_steps:
             note = (step.safety_note or "").strip()
-            if "licensed" not in note.lower():
+            has_stop_condition = re.search(
+                r"\b(call|contact|consult|hire)\b[^.]{0,120}\blicensed\b",
+                note,
+                flags=re.IGNORECASE,
+            )
+            if not has_stop_condition:
                 note = f"{note} {licensed_line}".strip() if note else licensed_line
             fixed_steps.append(step.model_copy(update={"safety_note": note}))
         return result.model_copy(update={"repair_steps": fixed_steps})

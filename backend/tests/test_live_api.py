@@ -25,6 +25,7 @@ class LiveAgent:
 class LiveSpeech:
     def synthesize(self, text: str) -> bytes:
         assert 'Earth Leakage Circuit Breaker' in text
+        assert 'licensed professional' in text
         return b'RIFF-live-daddy-audio'
 
 
@@ -105,10 +106,36 @@ def test_live_session_acknowledges_barge_in_during_analysis() -> None:
         socket.send_json({'type': 'utterance', 'text': 'Start explaining.'})
         status = socket.receive_json()
         assert status['state'] == 'analyzing'
+        socket.send_json({'type': 'interrupt', 'turnId': 'stale-turn'})
+        assert socket.receive_json() == {
+            'type': 'error',
+            'code': 'turn_mismatch',
+            'detail': 'The requested turn is not active.',
+        }
         socket.send_json({'type': 'interrupt', 'turnId': status['turnId']})
 
         interrupted = socket.receive_json()
         assert interrupted == {
             'type': 'interrupted',
             'turnId': status['turnId'],
+        }
+
+
+def test_live_session_reports_configuration_error_as_json() -> None:
+    def broken_agent_factory() -> LiveAgent:
+        raise ValueError('Live providers are unavailable.')
+
+    client = TestClient(
+        create_app(
+            Settings(demo_mode=False),
+            agent_factory=broken_agent_factory,  # type: ignore[arg-type]
+            speech_factory=LiveSpeech,
+        )
+    )
+
+    with client.websocket_connect('/live/config-error') as socket:
+        assert socket.receive_json() == {
+            'type': 'error',
+            'code': 'configuration_error',
+            'detail': 'Live providers are unavailable.',
         }

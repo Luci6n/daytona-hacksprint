@@ -48,6 +48,7 @@ def test_analyze_returns_water_heater_contract_in_demo_mode() -> None:
     payload = response.json()
     assert payload['detectedItem'] == 'Rinnai Tankless Water Heater'
     assert payload['confidence'] == 0.94
+    assert payload['riskLevel'] == 'high'
     assert payload['arAnnotations'][0] == {
         'type': 'highlight',
         'x': 0.42,

@@ -31,8 +31,6 @@ def create_live_router(
     async def live_session(websocket: WebSocket, session_id: str) -> None:
         await websocket.accept()
         state = LiveSessionState(session_id=session_id)
-        agent = agent_factory()
-        speech = speech_factory()
         send_lock = asyncio.Lock()
         active_task: asyncio.Task[None] | None = None
         active_turn_id: str | None = None
@@ -40,6 +38,20 @@ def create_live_router(
         async def send_json(message: dict[str, object]) -> None:
             async with send_lock:
                 await websocket.send_json(message)
+
+        try:
+            agent = agent_factory()
+            speech = speech_factory()
+        except (ProviderError, ValueError) as exc:
+            await send_json(
+                {
+                    "type": "error",
+                    "code": "configuration_error",
+                    "detail": str(exc),
+                }
+            )
+            await websocket.close(code=1011)
+            return
 
         async def run_turn(turn_id: str, utterance: str) -> None:
             await send_json(
@@ -63,42 +75,46 @@ def create_live_router(
                 await send_json(
                     {"type": "status", "state": "synthesizing", "turnId": turn_id}
                 )
-                speech_text = (
-                    result.repair_steps[0].instruction
-                    if result.repair_steps
-                    else f"I found {result.detected_item}."
-                )
+                if result.repair_steps:
+                    first_step = result.repair_steps[0]
+                    speech_text = (
+                        f"{first_step.instruction} Safety: {first_step.safety_note}"
+                    )
+                else:
+                    speech_text = f"I found {result.detected_item}."
                 audio = await asyncio.to_thread(speech.synthesize, speech_text)
-                await send_json(
-                    {
-                        "type": "audio",
-                        "turnId": turn_id,
-                        "contentType": "audio/wav",
-                        "byteLength": len(audio),
-                    }
-                )
                 async with send_lock:
+                    await websocket.send_json(
+                        {
+                            "type": "audio",
+                            "turnId": turn_id,
+                            "contentType": "audio/wav",
+                            "byteLength": len(audio),
+                        }
+                    )
                     await websocket.send_bytes(audio)
             except asyncio.CancelledError:
                 raise
             except (ProviderError, ValueError) as exc:
-                await send_json(
-                    {
-                        "type": "error",
-                        "turnId": turn_id,
-                        "code": "turn_failed",
-                        "detail": str(exc),
-                    }
-                )
+                with suppress(WebSocketDisconnect, RuntimeError):
+                    await send_json(
+                        {
+                            "type": "error",
+                            "turnId": turn_id,
+                            "code": "turn_failed",
+                            "detail": str(exc),
+                        }
+                    )
             except Exception:
-                await send_json(
-                    {
-                        "type": "error",
-                        "turnId": turn_id,
-                        "code": "internal_error",
-                        "detail": "DaddyFix could not complete this turn.",
-                    }
-                )
+                with suppress(WebSocketDisconnect, RuntimeError):
+                    await send_json(
+                        {
+                            "type": "error",
+                            "turnId": turn_id,
+                            "code": "internal_error",
+                            "detail": "DaddyFix could not complete this turn.",
+                        }
+                    )
 
         await send_json({"type": "ready", "sessionId": session_id})
         try:
@@ -122,12 +138,22 @@ def create_live_router(
                     continue
 
                 if isinstance(event, LiveInterruptEvent):
-                    if (
+                    is_active_turn = (
                         active_task is not None
                         and not active_task.done()
                         and event.turn_id == active_turn_id
-                    ):
-                        active_task.cancel()
+                    )
+                    if not is_active_turn:
+                        await send_json(
+                            {
+                                "type": "error",
+                                "code": "turn_mismatch",
+                                "detail": "The requested turn is not active.",
+                            }
+                        )
+                        continue
+                    assert active_task is not None
+                    active_task.cancel()
                     await send_json(
                         {"type": "interrupted", "turnId": event.turn_id}
                     )
@@ -143,9 +169,10 @@ def create_live_router(
         except WebSocketDisconnect:
             pass
         finally:
-            if active_task is not None and not active_task.done():
-                active_task.cancel()
-                with suppress(asyncio.CancelledError):
+            if active_task is not None:
+                if not active_task.done():
+                    active_task.cancel()
+                with suppress(asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
                     await active_task
 
     return router

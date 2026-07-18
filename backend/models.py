@@ -74,6 +74,7 @@ class BuyablePart(APIModel):
 class AnalysisResult(APIModel):
     detected_item: str = Field(min_length=1, max_length=500)
     confidence: float = Field(ge=0, le=1)
+    risk_level: Literal["low", "medium", "high", "emergency"]
     issues: list[str]
     ar_annotations: list[ARAnnotation]
     repair_steps: list[RepairStep]
