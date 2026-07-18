@@ -3,7 +3,7 @@
 **Mission**: Hybrid MVP — iOS LiDAR AR + Daytona cloud agent (Kimi + Nosana + Oxylabs) + **live analysis events** for continuous real-world demos.  
 **Single Source of Truth**: This file + `PRD.md` v0.2.
 
-> **Platform note**: Lucian = **Windows** (backend / Daytona only). Kenji + Brian = **Mac**. Kenji’s Xcode may be blocked → Brian is **device verifier** and temporary owner of shippable iOS integration. Brian also owns **live stream capture** on device.
+> **Platform note (current)**: Lucian = **Windows** (backend code + providers). Brian = **Mac + 17 Pro + all Xcode**. Kenji = **no Xcode** → **deploy/ops/docs/smoke tests** only, without rewriting Lucian’s agent code. See `KENJI_ASSIGNMENTS.md` + `BRIAN_IOS_TAKEOVER.md`.
 
 ---
 
@@ -11,15 +11,15 @@
 
 | Area | Status | Owner going forward |
 |------|--------|---------------------|
-| LiDAR + AR anchors + tap | ✅ Done on device | Brian |
-| One-shot `VisionService` + mock | 🟡 Scaffold | Brian client / Lucian API |
-| Backend FastAPI + Kimi path | 🟡 Scaffold in repo | **Lucian deploy + harden** |
-| Daytona **public URL** | ❌ | **Lucian** |
-| Live stream events | ❌ | **Brian (iOS) + Lucian (API)** |
-| Voice + Repair UI + x402 | ❌ | Kenji (Brian merges if needed) |
-| Oxylabs / Nosana real | 🟡 Stubs | Lucian |
+| LiDAR + AR anchors + tap | ✅ Done on device | **Brian** |
+| All iOS UI / voice / VisionService / x402 | 🟡 / ❌ | **Brian (full takeover)** |
+| Backend agent / providers | 🟡 Lucian `feature/lucian-backend` | **Lucian** |
+| Daytona **public URL** | ❌ | **Lucian** (+ Kenji deploy assist) |
+| Live WS / continuous | ❌ / in progress | **Lucian API** + **Brian iOS client** |
+| API smoke tests, judge docs, demo script | — | **Kenji** |
+| Oxylabs / Nosana / TTS deploy | 🟡 | **Lucian** (+ Kenji ops assist) |
 
-Details & % readiness: **`PRD.md` §5, §11, §15**.
+Details: **`PRD.md`**, **`KENJI_ASSIGNMENTS.md`**, **`BRIAN_IOS_TAKEOVER.md`**.
 
 ---
 
@@ -36,48 +36,43 @@ Details & % readiness: **`PRD.md` §5, §11, §15**.
 ## 2. Architecture (Cloud + Device)
 
 ```text
-iPhone                              Daytona (public HTTPS)
-─────                               ─────────────────────
-LiDAR / AR                          FastAPI Daddy Agent
-One-shot POST /analyze      ──►     Kimi (Moonshot) vision
-Live  POST /analyze/stream/event ►  Oxylabs parts
-placeAnnotations(JSON)      ◄──     Nosana optional GPU
+iPhone / IP camera                      Daytona (public HTTPS)
+──────────────────                      ─────────────────────
+LiDAR / AR (phone)                      FastAPI Daddy Agent
+One-shot POST /analyze         ──►      Kimi vision
+Phone live POST /stream/phone/event ►   Oxylabs / Nosana
+RTSP cam  (server pulls)       ──►      ffmpeg sample every 2s
+placeAnnotations(JSON)         ◄──      AnalysisResult (+ sessionId/seq)
 ```
 
 - **Keys never on phone.**  
-- Local uvicorn = dev only. Demo = Daytona URL in `APIConfig.baseURL`.  
-- Live mode = **periodic JPEGs + sessionId**, not 60fps WebRTC (unless free time).
+- **RTSP** = continuous real-world events (leaks) the model can see over time.  
+- Phone does **not** need to host RTSP; either phone JPEG events **or** IP cam RTSP.  
+- Live = **interval samples + sessionId**, not 60fps WebRTC (unless free time).
 
 ---
 
-## 3. Roles & Ownership (updated)
+## 3. Roles & Ownership (current — Xcode all Brian)
 
 | Person | Platform | Owns now | Does not own |
 |--------|----------|----------|--------------|
-| **Brian** | Mac + 17 Pro | `AR/*`, live capture/`LiveAnalysisSession`, device QA, ship `ContentView`/`AppState`/`VisionService` until Kenji unblocked | Daytona deploy, Oxylabs scrape impl |
-| **Lucian** | Windows | `backend/*`, Daytona sandbox, public URL, Kimi/Oxylabs/Nosana, stream **API**, agent prompts | Xcode, LiDAR |
-| **Kenji** | Mac (Xcode flaky) | Voice, RepairGuide, Payment/x402, UI copy, demo script — deliver as files/PRs | Backend secrets, AR internals |
+| **Brian** | Mac + 17 Pro | **Entire iOS app**: `AR/*`, `VisionService`, `VoiceManager`, SwiftUI, x402, Speech, live client, device QA | Rewriting Lucian’s Python agent |
+| **Lucian** | Windows | **Backend code** & providers (`feature/lucian-backend`), OpenAPI, WS live route, agent prompts | Xcode, iOS |
+| **Kenji** | No Xcode | **Deploy assist**, smoke tests, env checklists, judge one-pager, demo script, Nosana TTS ops **with Lucian’s OK** | Any `.swift`; Lucian domain refactors |
 
-**Rule**: Prefer discussion before editing someone else’s core files. Brian may merge Kenji’s Swift on device when Kenji can’t run Xcode.
+**Rule**: Kenji does not collide with Lucian — no silent rewrites of agent/providers. Brian does not wait on Kenji for Swift.
 
 ### File map
 
 ```text
-backend/                          ← Lucian
-  main.py, daddy_agent.py, vision.py, models.py
-  oxylabs_client.py, nosana_client.py
-  POST /analyze, GET /analyze/mock
-  POST /analyze/stream/event      ← Lucian to add
+backend/                          ← Lucian (code)
+  (+ Kenji: run deploy, smoke, docs only)
 
-DaddyFix/DaddyFix/
-  AR/*                            ← Brian
-  Services/VisionService.swift    ← Brian (client) / contract with Lucian
-  Services/APIConfig.swift        ← Brian sets Daytona URL
-  Services/LiveAnalysisSession    ← Brian to add
-  AppState.swift, ContentView     ← Brian ship; Kenji polish
-  VoiceManager, RepairGuideView,  ← Kenji
-  PaymentModal, x402Service       ← Kenji
-  Models/AnalysisResult.swift     ← Shared
+DaddyFix/DaddyFix/                ← Brian (all of it)
+  AR/*
+  Services/*   VisionService, VoiceManager, APIConfig, x402…
+  Views/*      ContentView, RepairGuide, PaymentModal…
+  AppState.swift, Models/AnalysisResult.swift
 ```
 
 ---

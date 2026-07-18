@@ -15,6 +15,33 @@ struct AnalysisResult: Codable, Sendable {
     let arAnnotations: [ARAnnotation]
     let repairSteps: [RepairStep]
     let buyableParts: [BuyablePart]
+    /// Live / RTSP stream metadata (optional — one-shot may omit)
+    let sessionId: String?
+    let seq: Int?
+    /// "snapshot" | "live" | "rtsp"
+    let eventType: String?
+
+    init(
+        detectedItem: String,
+        confidence: Double,
+        issues: [String],
+        arAnnotations: [ARAnnotation],
+        repairSteps: [RepairStep],
+        buyableParts: [BuyablePart],
+        sessionId: String? = nil,
+        seq: Int? = nil,
+        eventType: String? = nil
+    ) {
+        self.detectedItem = detectedItem
+        self.confidence = confidence
+        self.issues = issues
+        self.arAnnotations = arAnnotations
+        self.repairSteps = repairSteps
+        self.buyableParts = buyableParts
+        self.sessionId = sessionId
+        self.seq = seq
+        self.eventType = eventType
+    }
 }
 
 struct ARAnnotation: Codable, Identifiable, Sendable {

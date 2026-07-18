@@ -110,50 +110,65 @@ Legend: ✅ done · 🟡 partial / scaffold · ❌ not started · ⚠️ blocked
 
 ---
 
-## 6. Live Stream Design (What We Ship for “Continuous Real-World Events”)
+## 6. Live / Continuous Events — Why Screenshots Fail + RTSP
 
 ### Goal for judges
-Show: *“While something is happening in the real world (e.g. leak), the agent keeps watching and updates AR guidance.”*
+Show: *“While something is happening in the real world (e.g. a tap leaking), the agent watches **over time** and updates AR guidance.”*
 
-### Practical stream (hackathon-feasible — not full WebRTC TV)
+A **single screenshot cannot** reliably prove a drip/leak: you need **temporal** evidence (multiple frames from a stream).
 
-**Not** required: raw WebRTC multi-viewer CDN.  
-**Required**: **event stream of frames** from the phone to Daytona on a timer.
+### Two ingest paths (both end in the same `AnalysisResult`)
+
+| Path | Source | Who pulls media | Best for |
+|------|--------|-----------------|----------|
+| **A — RTSP** | IP / CCTV camera (`rtsp://…:554/…`) | **Daytona** samples with ffmpeg every N s | Real continuous events, fixed scene, pro story |
+| **B — Phone events** | iPhone AR camera JPEGs | **Phone POSTs** every N s | LiDAR co-located view, no extra camera |
 
 ```text
-Brian (iOS)                              Lucian (Daytona)
-───────────                              ────────────────
-Start Live Analyze
-  every N seconds (e.g. 1.5–2.5s)
-  OR every N frames:
-    grab AR frame JPEG (compressed)
-    POST /analyze/stream/event
-      { sessionId, seq, imageBase64, timestamp }
-                                         agent runs Kimi (+ Oxylabs/Nosana as needed)
-                                         returns AnalysisResult (or delta)
-    on response:
-      place/update AR annotations
-      emit UI event (issue text / voice)
-Stop Live Analyze
+                    ┌─ RTSP IP cam ──ffmpeg sample──┐
+Real world event ──┤                               ├─► Daytona Daddy Agent (Kimi)
+                    └─ iPhone frame events ─────────┘         │
+                                                              ▼
+                                                     AnalysisResult JSON
+                                                              │
+                     iPhone LiDAR AR ◄── place/update annotations (poll or response)
 ```
 
-| Parameter | Suggested demo default |
-|-----------|-------------------------|
-| Interval | **2.0 s** (tunable) |
-| Resolution | Downscale ~720p or lower JPEG q≈0.6 |
-| Max in-flight | 1 request (drop/skip if previous still running) |
-| Session | UUID `sessionId` for whole live run |
-| Fallback | If network fails → keep last AR pins; show “reconnecting” |
+**RTSP** = control protocol for play/pause/describe of media (classic CCTV; often port **554**).  
+Actual video bytes usually ride **RTP**; we use **ffmpeg** to grab JPEG snapshots from the live RTSP URL on an interval so the model sees *change over time* without full WebRTC.
 
-### Optional upgrade (if time)
-- Batch 3 frames / 1s as a “mini-clip” for better leak motion.  
-- WebSocket from Daytona for push results (nice-to-have).  
-- True video upload endpoint `/analyze/clip` (Lucian).
+### API (implemented in `backend/`)
 
-### What live stream is **not**
-- Not streaming LiDAR mesh to cloud  
-- Not AI every AR render frame (60 fps)  
-- Not replacing LiDAR tracking — agent still returns coords; AR still anchors  
+| Method | Path | Role |
+|--------|------|------|
+| POST | `/stream/rtsp/start` | `{ rtspUrl, intervalSec, hint }` → sessionId; server loops |
+| POST | `/stream/phone/start` | Open phone-driven session |
+| POST | `/stream/phone/event` | `{ sessionId, seq, imageBase64 }` |
+| GET | `/stream/{sessionId}/latest` | Latest result for AR |
+| POST | `/stream/{sessionId}/stop` | Stop |
+
+### Demo defaults
+
+| Parameter | Value |
+|-----------|--------|
+| Sample interval | **2.0 s** |
+| JPEG quality | moderate (q≈5 ffmpeg / 0.55 phone) |
+| Max in-flight (phone) | 1 |
+| Daytona dep | **ffmpeg** (`/health.ffmpeg`) |
+
+### What this is **not**
+- Not streaming LiDAR meshes to cloud  
+- Not 60 fps AI on every AR frame  
+- Not requiring the **iPhone to be an RTSP server** (hard / unnecessary)  
+- Optional later: WebRTC, full video clip upload, Nosana video models  
+
+### Brian vs Lucian on live
+
+| Brian | Lucian |
+|-------|--------|
+| Phone capture timer → `/stream/phone/event` | Deploy + **ffmpeg** + RTSP URL demo |
+| Poll `/latest` OR use POST response → AR | Harden RTSP + Kimi on continuous frames |
+| Optional UI: “Start RTSP session” with URL | Provide demo cam URL or MediaMTX |
 
 ---
 

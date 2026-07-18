@@ -1,129 +1,85 @@
-# Where to Continue — Lucian & Kenji
-**Updated**: after merge of Brian’s vision/cloud/docs work to `main`  
-**Branch**: work is on `main` (merged from `feature/kenji-vision`)
+# Where to Continue — Team Split (Xcode → Brian only)
 
-Full detail: `PRD.md` v0.2 §11–§15 · `AGENTS.md` §0, §5.
+**Updated**: Kenji has **no Xcode**. All iOS implementation = **Brian**.  
+Kenji = **deploy / smoke / docs** without colliding with **Lucian** backend ownership.
 
----
-
-## Lucian (Windows — Daytona / agent / stack)
-
-### Your job
-Own the **cloud**. iOS only talks to your **public Daytona HTTPS URL**.
-
-### Start here
-```text
-backend/
-  main.py           # FastAPI: /health, /analyze, /analyze/mock
-  daddy_agent.py    # pipeline hooks
-  vision.py         # Kimi (Moonshot) + mock fallback
-  models.py         # AnalysisResult = iOS contract
-  oxylabs_client.py # stub → real scrape
-  nosana_client.py  # stub → GPU path
-  .env.example      # copy secrets into Daytona env (never commit .env)
-```
-
-### Do next (order)
-1. **Deploy `backend/` on Daytona** → get public URL  
-2. Set sandbox env: `MOONSHOT_API_KEY`, `KIMI_MODEL=kimi-k2.7-code`, Oxylabs, Nosana  
-3. Prove: `GET /health`, `GET /analyze/mock`, `POST /analyze` with a real image  
-4. **Add** `POST /analyze/stream/event` for Brian’s live demo  
-   - Body idea: `{ sessionId, seq, imageBase64, mimeType, hint? }`  
-   - Response: same `AnalysisResult` camelCase JSON  
-5. Paste **public base URL** in team chat so Brian can set `APIConfig.baseURL`  
-6. Oxylabs parts for Rinnai/ELCB if keys work; Nosana optional but show in `/health`
-
-### Do **not**
-- Edit Xcode / `AR/*`  
-- Put API keys in the iOS app  
-
-### Success when
-Brian’s 17 Pro hits your URL and gets real (or solid mock) annotations.
+| Doc | Audience |
+|-----|----------|
+| `BRIAN_IOS_TAKEOVER.md` | Brian — full iOS checklist |
+| `KENJI_ASSIGNMENTS.md` | Kenji — ops only |
+| Lucian progress paste + `docs/` on his branch | Lucian |
 
 ---
 
-## Kenji (Mac — UI / voice / pay; Xcode may be broken)
+## Lucian (Windows — backend owner)
 
-### Your job
-**Product chrome** on top of Brian’s AR + VisionService. If Xcode fails, write Swift files / specs; **Brian merges and runs on device**.
+### Own
+- Agent code, providers (Oxylabs, Doubleword, Kimi/ai&, Nosana TTS service code)
+- `POST /analyze`, `POST /speech/synthesize`, future `WS /live/{sessionId}`
+- Architecture; fix tests; safety validation
+- Final say on backend design
 
-### Start here (create / own these)
-```text
-DaddyFix/DaddyFix/
-  Services/VoiceManager.swift      ← you
-  Views/RepairGuideView.swift      ← you
-  Views/PaymentModal.swift         ← you
-  Services/x402Service.swift       ← you
-  AppState.swift                   ← extend with Brian (phases, speak on analysis)
-  Views/ContentView.swift          ← polish chrome (Brian has temporary shell)
-```
+### Do next
+1. Land/push `feature/lucian-backend`  
+2. Implement live WebSocket (make the 2 tests pass)  
+3. Work with **Kenji** on persistent Daytona URL (he runs steps; you approve)  
+4. Finish Nosana TTS image deploy path (Kenji can assist Docker/warmup)  
+5. Paste public URL + any contract deltas to Brian  
 
-### Already exists for you to call
-- `VisionService` — `analyze` / `fetchServerMock` / `mockAnalyze`  
-- `AppState.apply(result)` — places AR via Brian’s raycast  
-- `raycastManager.onAnnotationSelected` — tap ELCB → open your guide/pay  
-- Contract: `Models/AnalysisResult.swift`
-
-### Do next (order)
-1. **VoiceManager** — `AVSpeechSynthesizer`, speak `repairSteps[0]` + safety  
-2. **RepairGuideView** — list steps + safety notes  
-3. Wire: on analysis success → voice; on tap label → guide sheet  
-4. **PaymentModal + x402** (P1 — can simulate 402 success)  
-5. **Demo script** in README (judges): one-shot heater + mention live when ready  
-6. Push a PR or send files; ask Brian to **⌘R on 17 Pro**
-
-### Do **not**
-- Rewrite `AR/*` without Brian  
-- Block on Daytona — use **Local mock** button until Lucian’s URL exists  
-
-### Success when
-After Analyze, calm Daddy voice + steps UI; tap ELCB opens guide/buy.
+### Do not
+- Expect Kenji to write Swift  
+- Expect Brian to implement Python providers  
 
 ---
 
-## Brian (context for you two)
+## Kenji (no Xcode — ops lane)
 
-| Done | Next |
-|------|------|
-| LiDAR AR on device | LiveAnalysisSession (frame events) |
-| VisionService + AppState shell | Point API at Lucian’s Daytona URL |
-| Backend scaffold in repo | Pair stream API with Lucian |
-| PRD/AGENTS status | Device-QA your PRs |
+### Own
+See **`KENJI_ASSIGNMENTS.md`**.
+
+| Do | Don’t |
+|----|--------|
+| Daytona persistent deploy **with Lucian** → public URL for Brian | Edit Lucian agent/provider code unasked |
+| Smoke: `/health`, `/analyze`, `/speech/synthesize` → log | Commit secrets |
+| Env checklist (names only) | Any Xcode / `.swift` |
+| Judge one-pager + demo script | Redesign API without Lucian |
+| Nosana TTS deploy assist if Lucian asks | Own production architecture |
+
+### Success
+Brian has a **public base URL** + you confirmed analyze + WAV smoke pass.
 
 ---
 
-## Shared contract (don’t break)
+## Brian (all Xcode + 17 Pro)
 
-```json
-{
-  "detectedItem": "string",
-  "confidence": 0.9,
-  "issues": ["..."],
-  "arAnnotations": [
-    { "type": "highlight", "x": 0.42, "y": 0.58, "z": null,
-      "width": 0.18, "height": 0.12, "label": "ELCB", "color": "#22C55E" }
-  ],
-  "repairSteps": [
-    { "step": 1, "instruction": "...", "safetyNote": "..." }
-  ],
-  "buyableParts": [
-    { "id": "...", "name": "...", "estimatedPrice": "...", "x402Ready": true }
-  ]
-}
-```
+### Own
+See **`BRIAN_IOS_TAKEOVER.md`**.
 
-Live later adds: `sessionId`, `seq`, `eventType`.
+- Entire iOS app: AR + analyze client + Speech + WAV voice + UI + x402  
+- Match Lucian: `symptom` + `deviceHint` + `imageBase64` → `AnalysisResult`  
+- `POST /speech/synthesize` → play WAV (AVSpeech fallback)  
+- Device integration test for judges  
+
+### Success
+One-shot demo: frame → analyze → LiDAR pin → Daddy audio → tap guide/buy.
 
 ---
 
 ## Integration order
 
 ```text
-1. Lucian: Daytona URL live
-2. Brian: one-shot Analyze on phone
-3. Brian + Lucian: live stream events
-4. Kenji: voice + guide + x402
-5. Judges: Demo A (heater) then Demo B (live)
+1. Lucian: API solid on branch (+ Kenji smoke)
+2. Kenji + Lucian: public Daytona URL
+3. Brian: APIConfig URL → full device loop
+4. Lucian: live WS → Brian client later
+5. Kenji: demo script / judge stack story
 ```
 
-Ping in chat when your piece is ready so the next person isn’t blocked.
+## Collision rules
+
+```text
+Python agent / providers  → Lucian only
+Deploy button-pushing     → Kenji OK if Lucian agrees
+Swift / Xcode             → Brian only
+Secrets                   → never in git or iOS
+```

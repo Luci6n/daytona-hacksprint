@@ -27,13 +27,13 @@ See **PRD §15** for detail.
 
 Phone sends **frames/events** → **Daytona agent** reasons → phone **LiDAR-locks** annotations. Keys stay in the cloud.
 
-## Team
+## Team (current)
 
 | Person | Focus |
 |--------|--------|
-| **Brian** | AR + live capture + device ship |
-| **Lucian** | Daytona + agent + Oxylabs/Nosana/Kimi |
-| **Kenji** | Voice, guide UI, x402, demo script |
+| **Brian** | **All Xcode / iOS** (AR + VisionService + voice UI + x402 + device) — see `BRIAN_IOS_TAKEOVER.md` |
+| **Lucian** | Backend agent / providers / WS live — his branch + `docs/` |
+| **Kenji** | **No Xcode** — Daytona deploy assist, smoke tests, judge docs — see `KENJI_ASSIGNMENTS.md` |
 
 ## iOS
 

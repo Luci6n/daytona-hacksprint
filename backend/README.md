@@ -4,12 +4,37 @@
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/health` | Status + model flags |
+| GET | `/health` | Status + model flags + `ffmpeg` / RTSP readiness |
 | GET | `/analyze/mock` | Perfect water-heater `AnalysisResult` (no LLM) |
-| POST | `/analyze` | JSON `{ "imageBase64", "mimeType?", "hint?" }` |
+| POST | `/analyze` | One-shot JSON `{ "imageBase64", "mimeType?", "hint?" }` |
 | POST | `/analyze/upload` | Multipart image file |
+| POST | `/stream/rtsp/start` | **Continuous**: sample RTSP camera every N sec → agent |
+| POST | `/stream/phone/start` | Open phone-driven live session |
+| POST | `/stream/phone/event` | iOS posts one live JPEG event |
+| GET | `/stream/{sessionId}/latest` | Latest `AnalysisResult` for AR refresh |
+| GET | `/stream/{sessionId}/status` | seq / errors / active |
+| POST | `/stream/{sessionId}/stop` | Stop RTSP loop |
 
 Response shape matches iOS `AnalysisResult` (camelCase).
+
+### Why RTSP (not only screenshots)
+
+A single still cannot show *change over time* (water dripping, flow starting).  
+RTSP is the standard control/media path for IP cameras (often port **554**).  
+Daytona **pulls** frames from the stream on an interval → Kimi reasons → JSON.  
+iPhone LiDAR still **places** AR pins (poll `/latest` or use phone events).
+
+```bash
+# Start continuous RTSP analysis
+curl -s -X POST http://127.0.0.1:8000/stream/rtsp/start \
+  -H 'Content-Type: application/json' \
+  -d '{"rtspUrl":"rtsp://user:pass@cam:554/stream1","intervalSec":2,"hint":"leaking pipe"}'
+
+# Poll results for AR
+curl -s http://127.0.0.1:8000/stream/<sessionId>/latest | jq
+```
+
+Install ffmpeg in Daytona: `apt-get update && apt-get install -y ffmpeg`
 
 ## Local run
 
