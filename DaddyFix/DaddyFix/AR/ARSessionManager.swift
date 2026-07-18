@@ -48,12 +48,20 @@ final class ARSessionManager: NSObject, ObservableObject {
         // arView.debugOptions = [.showFeaturePoints]
         #endif
 
-        runSession()
+        // IMPORTANT: do not mutate @Published state synchronously inside
+        // UIViewRepresentable.makeUIView (SwiftUI view-update cycle).
+        // Defer so we don't get:
+        // "Publishing changes from within view updates is not allowed".
+        Task { @MainActor in
+            self.runSession()
+        }
     }
 
     func runSession() {
         guard ARWorldTrackingConfiguration.isSupported else {
-            trackingStatus = .notAvailable
+            publish {
+                self.trackingStatus = .notAvailable
+            }
             return
         }
 
@@ -62,20 +70,20 @@ final class ARSessionManager: NSObject, ObservableObject {
         config.environmentTexturing = .automatic
         config.worldAlignment = .gravity
 
+        var lidar = false
+        var mesh = false
+
         // LiDAR scene reconstruction — the demo differentiator.
         if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
             config.sceneReconstruction = .mesh
-            isLiDARAvailable = true
-            meshEnabled = true
+            lidar = true
+            mesh = true
         } else if ARWorldTrackingConfiguration.supportsSceneReconstruction(.meshWithClassification) {
             config.sceneReconstruction = .meshWithClassification
-            isLiDARAvailable = true
-            meshEnabled = true
-        } else {
-            isLiDARAvailable = false
-            meshEnabled = false
-            // Still usable on non-LiDAR devices via plane estimation.
+            lidar = true
+            mesh = true
         }
+        // else: still usable on non-LiDAR devices via plane estimation.
 
         // Frame semantics help depth-aware placement when available.
         if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
@@ -86,7 +94,19 @@ final class ARSessionManager: NSObject, ObservableObject {
         }
 
         arView?.session.run(config, options: [.resetTracking, .removeExistingAnchors])
-        trackingStatus = .initializing
+
+        publish {
+            self.isLiDARAvailable = lidar
+            self.meshEnabled = mesh
+            self.trackingStatus = .initializing
+        }
+    }
+
+    /// Coalesce UI publishes onto the next main-actor turn (safe from view updates).
+    private func publish(_ updates: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            updates()
+        }
     }
 
     func pause() {

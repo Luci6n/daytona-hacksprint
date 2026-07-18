@@ -62,11 +62,18 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ARView, context: Context) {
-        sessionManager.setMeshVisualizationEnabled(showMeshOverlay)
+        // Defer so mesh toggle never races with SwiftUI's update pass.
+        let enabled = showMeshOverlay
+        let manager = sessionManager
+        Task { @MainActor in
+            manager.setMeshVisualizationEnabled(enabled)
+        }
     }
 
     static func dismantleUIView(_ uiView: ARView, coordinator: Coordinator) {
-        coordinator.sessionManager.pause()
+        Task { @MainActor in
+            coordinator.sessionManager.pause()
+        }
     }
 
     // MARK: - Coordinator
@@ -81,10 +88,14 @@ struct ARViewContainer: UIViewRepresentable {
             self.raycastManager = raycastManager
         }
 
+        /// UIKit delivers gestures on the main thread. `assumeIsolated` satisfies
+        /// Swift 6 checks for calling @MainActor `RaycastManager` APIs.
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let arView, gesture.state == .ended else { return }
-            let point = gesture.location(in: arView)
-            raycastManager.handleTap(at: point)
+            guard gesture.state == .ended else { return }
+            let point = gesture.location(in: gesture.view)
+            MainActor.assumeIsolated {
+                raycastManager.handleTap(at: point)
+            }
         }
     }
 }
