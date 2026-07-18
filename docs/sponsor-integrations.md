@@ -11,7 +11,7 @@ live availability check.
 | Nosana | GPU hosting for Qwen3-TTS VoiceDesign; GPU market discovery | `NOSANA_API_KEY`, `NOSANA_TTS_URL` | `backend/integrations/nosana.py`, `backend/speech_service/` |
 | Oxylabs | Current manuals, troubleshooting context, and part/product search through Residential Proxy or Web Scraper API | `OXYLABS_USERNAME`, `OXYLABS_PASSWORD`, `OXYLABS_MODE` | `backend/integrations/oxylabs.py` |
 | Doubleword | Qwen3-VL image observation for the ai& path and final safety audit | `DOUBLEWORD_API_KEY`, base URL, model | `backend/integrations/doubleword.py` |
-| ai& | Japan-hosted Kimi reasoning/data-residency path | `AIAND_API_KEY`, `AIAND_BASE_URL`, `AIAND_MODEL` | `backend/integrations/kimi.py` |
+| ai& | Japan-hosted Qwen reasoning and data-residency path | `AIAND_API_KEY`, `AIAND_BASE_URL`, `AIAND_MODEL` | `backend/integrations/kimi.py` |
 
 ## Daytona
 
@@ -28,9 +28,9 @@ Official references:
 
 `KimiReasoningClient` supports two OpenAI-compatible configurations:
 
-- Complete ai& settings take priority and use `moonshotai/kimi-k2.7-code` for
-  text reasoning. Because this model path is text-only, Doubleword first
-  converts the image into a structured visual observation.
+- Complete ai& settings take priority and use the live-verified
+  `qwen/qwen3.6-27b` model for text reasoning. Doubleword first converts the
+  image into a structured visual observation.
 - Otherwise, a Moonshot key uses `kimi-k2.6` with the image directly.
 
 Do not place an ai& key in `MOONSHOT_API_KEY`; keys are scoped to their own base

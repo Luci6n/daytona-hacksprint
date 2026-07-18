@@ -82,7 +82,7 @@ In live mode, the agent:
 
 1. retrieves repair/manual context using Oxylabs;
 2. localizes visible parts with Doubleword's Qwen3-VL model when using ai&;
-3. asks Kimi through Moonshot or ai& to produce the repair guidance;
+3. asks Kimi through Moonshot or Qwen through ai& to produce repair guidance;
 4. validates the structured result against the Swift contract;
 5. optionally asks Doubleword to reject unsafe guidance.
 
