@@ -9,10 +9,11 @@ from backend.models import AnalysisResult, AnalyzeRequest
 from backend.provider_errors import ProviderConfigurationError, ProviderResponseError
 
 
+# General-scene prompt (not water-heater-only). Lucian's ai& call params below.
 SYSTEM_PROMPT = """You are DaddyFix, a safety-first spatial home repair vision agent.
 
-You analyze the ACTUAL image and user symptom. Do NOT invent a water heater,
-ELCB, or any device that is not visible in the image or clearly described.
+Analyze the ACTUAL image and user symptom. Do NOT invent a water heater, ELCB,
+or any device that is not visible in the image or clearly described by the user.
 
 Return JSON only matching the supplied schema exactly.
 Coordinates x,y are NORMALIZED 0..1 with origin at the TOP-LEFT of the image.
@@ -23,40 +24,36 @@ Annotation rules:
 - type "highlight" for the problem region (battery bay, empty slot, damage)
 - type "arrow" pointing at that region
 - type "text" with a short label (e.g. "Battery missing", "Insert AA here")
-- label should name the part simply
-- color soft green/teal when helpful: #22C55E, #38BDF8
+- For a wireless mouse with no batteries: highlight the open battery compartment
 
 Repair rules:
 - 2-4 short steps that match WHAT IS ACTUALLY WRONG
-- Every repairSteps[].safetyNote must be non-empty and mention calling a
+- Every repairSteps[].safetyNote must be non-empty and tell the user to call a
   licensed professional when unsure or if the fix is electrical/gas/high-risk
-- For a wireless mouse/keyboard with no battery: highlight the open battery
-  compartment and steps to insert the correct cells (polarity, size)
+- buyableParts must match the diagnosis (e.g. AA batteries for a mouse)
 - Never invent Rinnai/ELCB unless the image clearly shows a water heater panel
-- buyableParts: only parts that match the diagnosis (e.g. AA/AAA batteries)
 
 If the image is unclear, say so with low confidence and still return valid JSON.
 """
 
 
 class KimiReasoningClient:
-    """OpenAI-compatible reasoning adapter for Moonshot or ai&-hosted Kimi."""
+    """OpenAI-compatible reasoning adapter for Moonshot or ai& (Lucian-verified)."""
 
     def __init__(self, settings: Settings) -> None:
         if settings.aiand_api_key and settings.aiand_base_url and settings.aiand_model:
             api_key = settings.aiand_api_key
             base_url = settings.aiand_base_url
             self._model = settings.aiand_model
-            # Prefer multimodal when an image is present; many gateways accept
-            # image_url. Text-only models will error and the agent may retry.
-            self._supports_vision = True
-            self._provider = "aiand"
+            # Lucian: ai& path is text-only; Doubleword supplies visual_context.
+            self._supports_vision = False
+            self._uses_aiand = True
         elif settings.moonshot_api_key:
             api_key = settings.moonshot_api_key
             base_url = settings.kimi_base_url
             self._model = settings.kimi_model
             self._supports_vision = True
-            self._provider = "moonshot"
+            self._uses_aiand = False
         else:
             raise ProviderConfigurationError(
                 "Kimi requires either MOONSHOT_API_KEY, or complete ai& settings "
@@ -71,27 +68,27 @@ class KimiReasoningClient:
         visual_context: str | None = None,
         conversation_context: str | None = None,
     ) -> AnalysisResult:
-        if not request.image_base64 and not visual_context:
+        if self._supports_vision and not request.image_base64:
+            raise ValueError("imageBase64 is required when DEMO_MODE=false.")
+        if self._uses_aiand and not visual_context and not request.image_base64:
             raise ValueError(
-                "imageBase64 (or a prior visual observation) is required for live analysis."
+                "ai& path needs Doubleword visual observation or an image context."
             )
 
         schema = AnalysisResult.model_json_schema(by_alias=True)
         user_text = (
-            "Analyze the real scene. Do not default to a water heater.\n"
-            f"Device hint (may be empty/wrong): {request.device_hint or 'none — trust the image'}\n"
-            f"Reported symptom: {request.symptom or 'not provided — infer from image'}\n"
-            f"Vision model observation JSON: {visual_context or 'none'}\n"
+            "Analyze the real scene. Prefer the image/observation over any prior.\n"
+            f"Device hint (may be empty/wrong): {request.device_hint or 'none — trust vision'}\n"
+            f"Reported symptom: {request.symptom or 'not provided — infer from vision'}\n"
+            f"Verified visual observation JSON: {visual_context or 'none'}\n"
             f"Previous turn context: {conversation_context or 'No previous turn'}\n"
-            f"Web/product context (may be empty): {repair_context}\n"
+            f"Oxylabs repair context: {repair_context}\n"
             f"Required JSON schema: {schema}\n"
-            "Return arAnnotations that mark the exact problem area in the image "
+            "Return arAnnotations on the exact problem area "
             "(e.g. empty battery compartment on a mouse)."
         )
-
-        # Always attach image when present so the model can see the mouse/device.
-        user_content: str | list[ChatCompletionContentPartParam]
-        if request.image_base64:
+        user_content: str | list[ChatCompletionContentPartParam] = user_text
+        if self._supports_vision and request.image_base64:
             image_url = request.image_base64
             if not image_url.startswith("data:"):
                 image_url = f"data:image/jpeg;base64,{image_url}"
@@ -99,48 +96,35 @@ class KimiReasoningClient:
                 {"type": "text", "text": user_text},
                 {"type": "image_url", "image_url": {"url": image_url}},
             ]
-        else:
-            user_content = user_text
 
         messages: list[ChatCompletionMessageParam] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_content},
         ]
-
         try:
-            response = self._client.chat.completions.create(
-                model=self._model,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=0.1,
-            )
-        except Exception as exc:
-            # Text-only models: retry without image_url if multimodal rejected
-            if request.image_base64 and visual_context:
-                try:
-                    messages = [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {
-                            "role": "user",
-                            "content": user_text
-                            + "\n(Image could not be sent; use vision observation only.)",
-                        },
-                    ]
-                    response = self._client.chat.completions.create(
-                        model=self._model,
-                        messages=messages,
-                        response_format={"type": "json_object"},
-                        temperature=0.1,
-                    )
-                except Exception as exc2:
-                    raise ProviderResponseError(
-                        f"Kimi request failed: {exc2}"
-                    ) from exc2
+            # Lucian-verified ai& call shape (bba342e).
+            if self._uses_aiand:
+                response = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                    temperature=0,
+                    max_completion_tokens=1_000,
+                    extra_body={"reasoning_effort": "none"},
+                )
             else:
-                raise ProviderResponseError(f"Kimi request failed: {exc}") from exc
+                response = self._client.chat.completions.create(
+                    model=self._model,
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                    temperature=0.1,
+                )
+        except Exception as exc:
+            raise ProviderResponseError(f"Kimi request failed: {exc}") from exc
 
         content = response.choices[0].message.content
         if not content:
+            # Some gateways put text in refusal / empty content with tool traces
             raise ProviderResponseError("Kimi returned an empty response.")
         try:
             return AnalysisResult.model_validate_json(content)

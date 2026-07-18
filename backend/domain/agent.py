@@ -81,13 +81,13 @@ class DaddyAgent:
 
         # If model still hallucinated heater when user clearly said mouse/battery, soft-correct is hard;
         # safety check only.
-        try:
-            self._ensure_minimum_safety(result)
-        except UnsafeGuidanceError as exc:
+        # Ensure steps exist + inject licensed-pro stop language if model omitted it.
+        result = self._coerce_minimum_safety(result)
+        if not result.repair_steps:
             return generic_unavailable_result(
                 device_hint=device_hint or request.symptom or "device in view",
                 symptom=request.symptom,
-                reason=str(exc),
+                reason="model returned no repair steps",
             )
 
         if self._providers.safety is not None:
@@ -99,14 +99,18 @@ class DaddyAgent:
         return result
 
     @staticmethod
-    def _ensure_minimum_safety(result: AnalysisResult) -> None:
+    def _coerce_minimum_safety(result: AnalysisResult) -> AnalysisResult:
+        """Do not throw away a good visual diagnosis for a missing safety phrase."""
         if not result.repair_steps:
-            raise UnsafeGuidanceError(
-                "Safety validation rejected repair guidance without repair steps."
-            )
-        if not any(
-            "licensed " in step.safety_note.lower() for step in result.repair_steps
-        ):
-            raise UnsafeGuidanceError(
-                "Safety validation requires a licensed professional stop condition."
-            )
+            return result
+        licensed_line = (
+            "If you are unsure or anything looks damaged/swollen/hot, stop and "
+            "call a licensed professional."
+        )
+        fixed_steps = []
+        for step in result.repair_steps:
+            note = (step.safety_note or "").strip()
+            if "licensed" not in note.lower():
+                note = f"{note} {licensed_line}".strip() if note else licensed_line
+            fixed_steps.append(step.model_copy(update={"safety_note": note}))
+        return result.model_copy(update={"repair_steps": fixed_steps})

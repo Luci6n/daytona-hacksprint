@@ -17,17 +17,18 @@ final class VoiceManager: NSObject, ObservableObject {
     @Published private(set) var lastError: String?
 
     private let baseURL: URL
+    private var sessionReady = false
 
     init(baseURL: URL = APIConfig.baseURL) {
         self.baseURL = baseURL
         super.init()
         synthesizer.delegate = self
+        // Category only here — do NOT setActive on main in init (UI hitch warning).
         try? AVAudioSession.sharedInstance().setCategory(
             .playback,
             mode: .spokenAudio,
             options: [.duckOthers]
         )
-        try? AVAudioSession.sharedInstance().setActive(true)
     }
 
     /// Prefer cloud Daddy WAV; on failure use system speech (explicit degraded mode).
@@ -35,6 +36,8 @@ final class VoiceManager: NSObject, ObservableObject {
         stop()
         lastError = nil
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        await prepareAudioSession()
 
         if APIConfig.forceLocalMock {
             speakLocal(text)
@@ -65,6 +68,30 @@ final class VoiceManager: NSObject, ObservableObject {
         synthesizer.stopSpeaking(at: .immediate)
         stopPlayerOnly()
         isSpeaking = false
+    }
+
+    // MARK: - Audio session (avoid main-thread setActive hitch)
+
+    private func prepareAudioSession() async {
+        if sessionReady { return }
+        // Activate off the cooperative main path via async continuation + global queue.
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let session = AVAudioSession.sharedInstance()
+                do {
+                    try session.setCategory(
+                        .playback,
+                        mode: .spokenAudio,
+                        options: [.duckOthers]
+                    )
+                    try session.setActive(true)
+                } catch {
+                    // Non-fatal — speech may still work
+                }
+                cont.resume()
+            }
+        }
+        sessionReady = true
     }
 
     // MARK: - Network TTS

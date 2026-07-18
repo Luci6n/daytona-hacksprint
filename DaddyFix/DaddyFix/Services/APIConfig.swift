@@ -19,7 +19,7 @@ enum APIConfig {
         }
         // Daytona signed preview (live providers). Re-deploy if expired / sandbox deleted.
         // Local LAN: return URL(string: "http://YOUR_MAC_IP:8000")!
-        return URL(string: "https://8000-vaflvx0lv4vpyab0.daytonaproxy01.net")!
+        return URL(string: "http://10.244.57.152:8000")!
     }()
 
     /// WebSocket base derived from HTTP(S) base.

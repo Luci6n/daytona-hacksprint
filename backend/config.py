@@ -41,13 +41,16 @@ class Settings(BaseSettings):
     oxylabs_username: str | None = None
     oxylabs_password: str | None = None
     oxylabs_ai_studio_api_key: str | None = None
+    oxylabs_mode: str = "web_scraper_api"
     oxylabs_realtime_url: str = "https://realtime.oxylabs.io/v1/queries"
+    oxylabs_proxy_url: str = "http://pr.oxylabs.io:7777"
+    oxylabs_proxy_country: str = "US"
     doubleword_api_key: str | None = None
     doubleword_base_url: str = "https://api.doubleword.ai/v1"
     doubleword_model: str = "Qwen/Qwen3-VL-30B-A3B-Instruct-FP8"
     aiand_api_key: str | None = None
     aiand_base_url: str | None = None
-    aiand_model: str | None = "moonshotai/kimi-k2.7-code"
+    aiand_model: str | None = "qwen/qwen3.6-27b"
 
     def provider_readiness(self) -> dict[str, bool]:
         return {

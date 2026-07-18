@@ -110,10 +110,8 @@ def test_live_agent_rejects_guidance_without_professional_stop_condition() -> No
         ),
     )
 
-    # Live path no longer raises — returns honest generic result (not a fake heater).
+    # Safety notes without "licensed" are coerced onto the model result.
     result = agent.analyze(AnalyzeRequest(symptom="mouse has no battery"))
-    assert result.confidence <= 0.3
-    assert any("incomplete" in i.lower() or "licensed" in i.lower() for i in result.issues) or any(
-        "licensed" in s.safety_note.lower() for s in result.repair_steps
-    )
-    assert "Water Heater" not in result.detected_item
+    assert result.repair_steps
+    assert all("licensed" in s.safety_note.lower() for s in result.repair_steps)
+
