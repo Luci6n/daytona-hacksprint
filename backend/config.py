@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -41,7 +42,9 @@ class Settings(BaseSettings):
     oxylabs_username: str | None = None
     oxylabs_password: str | None = None
     oxylabs_ai_studio_api_key: str | None = None
-    oxylabs_mode: str = "web_scraper_api"
+    oxylabs_mode: Literal["residential_proxy", "web_scraper_api"] = (
+        "web_scraper_api"
+    )
     oxylabs_realtime_url: str = "https://realtime.oxylabs.io/v1/queries"
     oxylabs_proxy_url: str = "http://pr.oxylabs.io:7777"
     oxylabs_proxy_country: str = "US"

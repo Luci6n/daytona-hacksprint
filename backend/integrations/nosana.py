@@ -62,6 +62,12 @@ class NosanaSpeechClient:
                 f"Nosana TTS request failed: {exc}"
             ) from exc
 
-        if not response.content:
-            raise ProviderResponseError("Nosana TTS returned empty audio.")
+        content_type = response.headers.get("content-type", "").lower()
+        is_wav = (
+            len(response.content) >= 12
+            and response.content[:4] == b"RIFF"
+            and response.content[8:12] == b"WAVE"
+        )
+        if "audio/wav" not in content_type or not is_wav:
+            raise ProviderResponseError("Nosana TTS did not return valid WAV audio.")
         return response.content

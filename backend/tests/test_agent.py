@@ -115,3 +115,43 @@ def test_live_agent_rejects_guidance_without_professional_stop_condition() -> No
     assert result.repair_steps
     assert all("licensed" in s.safety_note.lower() for s in result.repair_steps)
 
+def test_live_agent_rejects_negated_licensed_professional_note() -> None:
+    class RepairContext:
+        def search_repair_context(
+            self, device_hint: str, symptom: str | None
+        ) -> str:
+            return "verified manual context"
+
+    class Reasoning:
+        def analyze(
+            self,
+            request: AnalyzeRequest,
+            repair_context: str,
+            visual_context: str | None = None,
+            conversation_context: str | None = None,
+        ) -> AnalysisResult:
+            unsafe = water_heater_result()
+            return unsafe.model_copy(
+                update={
+                    "repair_steps": [
+                        RepairStep(
+                            step=1,
+                            instruction="Open the energized enclosure.",
+                            safety_note=(
+                                "You do not need a licensed professional for this."
+                            ),
+                        )
+                    ]
+                }
+            )
+
+    agent = DaddyAgent(
+        demo_mode=False,
+        providers=AgentProviders(
+            repair_context=RepairContext(),
+            reasoning=Reasoning(),
+        ),
+    )
+
+    with pytest.raises(UnsafeGuidanceError, match="licensed professional"):
+        agent.analyze(AnalyzeRequest(symptom="No hot water"))
