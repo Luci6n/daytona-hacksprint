@@ -17,7 +17,7 @@ DaddyAgent orchestration + ports        backend/domain/
         |
         +--> Oxylabs manual context
         +--> Doubleword visual observation
-        +--> Moonshot or ai& Kimi reasoning
+        +--> Moonshot Kimi or ai& Qwen reasoning
         +--> Doubleword safety validation
 
 iOS / VoiceManager
@@ -94,7 +94,7 @@ credential returns a clear `503` rather than preventing the API from starting.
 
 1. Oxylabs retrieves repair/manual context.
 2. Doubleword Qwen3-VL turns the image into a structured visual observation.
-3. ai&-hosted Kimi K2.7 Code reasons over the observation and context.
+3. ai&-hosted Qwen3.6 27B reasons over the observation and context.
 4. The response is validated against `AnalysisResult`.
 5. Doubleword audits the final safety guidance.
 

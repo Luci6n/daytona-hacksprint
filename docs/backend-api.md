@@ -162,8 +162,8 @@ raycast depth when it is absent.
 ### Live provider paths
 
 - Moonshot path: Oxylabs context plus the image is sent directly to Kimi K2.6.
-- ai& path: Doubleword Qwen3-VL first creates a visual observation; ai& Kimi
-  K2.7 Code then reasons over that observation and the Oxylabs context.
+- ai& path: Doubleword Qwen3-VL first creates a visual observation; ai& Qwen3.6
+  27B then reasons over that observation and the Oxylabs context.
 - When Doubleword is configured, the final repair guidance receives an
   additional safety audit.
 
