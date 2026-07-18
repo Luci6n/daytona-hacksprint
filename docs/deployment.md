@@ -36,13 +36,14 @@ Teammates do not need every field from `.env.example`:
 | --- | --- |
 | Kenji/Brian call a deployed API | Backend base URL in the iOS app; no sponsor credentials. |
 | Local deterministic demo | `DEMO_MODE=true`; no sponsor credentials. |
-| Live analysis through ai& | `DEMO_MODE=false`, Oxylabs username/password, complete ai& key/base/model, and a Doubleword inference key for image observation. |
-| Live analysis through Moonshot | `DEMO_MODE=false`, Oxylabs username/password, and a Moonshot key. Doubleword is optional for the final safety audit. |
+| Live analysis through ai& | `DEMO_MODE=false`, Oxylabs proxy username/password with `OXYLABS_MODE=residential_proxy`, complete ai& key/base/model, and a Doubleword inference key for image observation. |
+| Live analysis through Moonshot | `DEMO_MODE=false`, Oxylabs credentials/mode, and a Moonshot key. Doubleword is optional for the final safety audit. |
 | Call deployed sugar-daddy TTS | `NOSANA_TTS_URL`; bearer token only if the deployed endpoint adds one. |
 | Create/manage Nosana deployment | `NOSANA_API_KEY` on the operator's machine. |
 | Create/manage Daytona sandbox | `DAYTONA_API_KEY` on the operator's machine. |
 
-`OXYLABS_AI_STUDIO_API_KEY` is not used by the current Web Scraper API path.
+`OXYLABS_AI_STUDIO_API_KEY` is not used. Residential Proxy and Web Scraper API
+are separate Oxylabs products with different credential types.
 Keep `.env` and `.env.local` local; distribute access through sponsor team
 dashboards or a secret manager rather than Git or chat.
 

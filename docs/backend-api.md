@@ -94,6 +94,7 @@ long edge is sufficient for the demo and keeps request latency manageable.
 {
   "detectedItem": "Rinnai Tankless Water Heater",
   "confidence": 0.94,
+  "riskLevel": "high",
   "issues": [
     "ELCB may have tripped",
     "No hot water reported"
@@ -228,6 +229,7 @@ to this generation.
   "data": {
     "detectedItem": "Rinnai Tankless Water Heater",
     "confidence": 0.94,
+    "riskLevel": "high",
     "issues": ["ELCB may have tripped"],
     "arAnnotations": [
       {
@@ -321,9 +323,11 @@ cancellation so the TTS voice does not trigger Apple Speech itself.
 }
 ```
 
-`turnId` is absent for malformed client events. Current error codes are
-`invalid_event`, `turn_failed`, and `internal_error`. Do not silently replace a
-live error with local demo guidance.
+`turnId` is absent for malformed client events and turn mismatches. Current
+error codes are `configuration_error`, `invalid_event`, `turn_mismatch`,
+`turn_failed`, and `internal_error`. A configuration error is sent immediately
+after the WebSocket is accepted, followed by a close; `ready` is not sent. Do
+not silently replace a live error with local demo guidance.
 
 ## `POST /speech/synthesize`
 
@@ -347,7 +351,9 @@ Swift should store the response in `Data` and play it using `AVAudioPlayer`.
 Do not attempt to decode this endpoint as JSON.
 
 The voice description, language, and model are server configuration. The iOS
-client deliberately cannot override the persona prompt.
+client deliberately cannot override the persona prompt. Live mode synthesizes
+the first instruction together with its `safetyNote`; do not remove the safety
+sentence during playback.
 
 ## Error contract
 

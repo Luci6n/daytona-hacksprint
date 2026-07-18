@@ -15,7 +15,7 @@ backend/api/                    FastAPI app, routes, and HTTP error mapping
 backend/domain/                 Provider-independent Daddy Agent and ports
 backend/integrations/           Kimi, Doubleword, Oxylabs, and Nosana adapters
 backend/models.py               Shared Python-first AnalysisResult contract
-backend/speech_service/         Qwen3-TTS GPU service deployed on Nosana
+backend/speech_service/         Qwen3-TTS GPU service deployable on Nosana
 ```
 
 The application factory injects sponsor adapters into the domain agent. This
@@ -42,7 +42,9 @@ Optional integrations:
 - `NOSANA_API_KEY` enables GPU market/job operations.
 - `NOSANA_TTS_URL` enables Qwen3-TTS audio through a Nosana GPU endpoint.
 - `DAYTONA_API_KEY` enables sandbox orchestration.
-- `OXYLABS_AI_STUDIO_API_KEY` is not required by Web Scraper API.
+- `OXYLABS_MODE=residential_proxy` uses the current proxy-user credentials.
+  `web_scraper_api` is available when a separate Web Scraper API user exists.
+- `OXYLABS_AI_STUDIO_API_KEY` is not used by either current path.
 
 `DEMO_MODE=true` returns the deterministic Rinnai/ELCB fixture without spending
 provider credits. Set it to `false` to require an image and call live providers.

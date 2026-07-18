@@ -9,7 +9,7 @@ live availability check.
 | Daytona | Isolated FastAPI/agent runtime and public signed preview URL | `DAYTONA_API_KEY`, `DAYTONA_API_URL`, `DAYTONA_TARGET` | `backend/daytona_sandbox.py` |
 | Kimi / Moonshot | Multimodal repair reasoning when using the direct K2.6 path | `MOONSHOT_API_KEY`, `KIMI_BASE_URL`, `KIMI_MODEL` | `backend/integrations/kimi.py` |
 | Nosana | GPU hosting for Qwen3-TTS VoiceDesign; GPU market discovery | `NOSANA_API_KEY`, `NOSANA_TTS_URL` | `backend/integrations/nosana.py`, `backend/speech_service/` |
-| Oxylabs | Current manuals, troubleshooting context, and part/product search | `OXYLABS_USERNAME`, `OXYLABS_PASSWORD` | `backend/integrations/oxylabs.py` |
+| Oxylabs | Current manuals, troubleshooting context, and part/product search through Residential Proxy or Web Scraper API | `OXYLABS_USERNAME`, `OXYLABS_PASSWORD`, `OXYLABS_MODE` | `backend/integrations/oxylabs.py` |
 | Doubleword | Qwen3-VL image observation for the ai& path and final safety audit | `DOUBLEWORD_API_KEY`, base URL, model | `backend/integrations/doubleword.py` |
 | ai& | Japan-hosted Kimi reasoning/data-residency path | `AIAND_API_KEY`, `AIAND_BASE_URL`, `AIAND_MODEL` | `backend/integrations/kimi.py` |
 
