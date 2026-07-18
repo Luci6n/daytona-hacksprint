@@ -17,8 +17,9 @@ enum APIConfig {
            let url = URL(string: env) {
             return url
         }
-        // TODO(demo): replace with Daytona public URL before judges.
-        return URL(string: "http://127.0.0.1:8000")!
+        // Daytona signed preview (live providers). Re-deploy if expired / sandbox deleted.
+        // Local LAN: return URL(string: "http://YOUR_MAC_IP:8000")!
+        return URL(string: "https://8000-s7xyqoldo2lkspem.daytonaproxy01.net")!
     }()
 
     /// WebSocket base derived from HTTP(S) base.

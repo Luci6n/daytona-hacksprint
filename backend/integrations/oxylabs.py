@@ -41,6 +41,13 @@ class OxylabsClient:
             response.raise_for_status()
             data = response.json()
         except (httpx.HTTPError, ValueError) as exc:
-            raise ProviderResponseError(f"Oxylabs request failed: {exc}") from exc
+            # Do not hard-fail the whole /analyze path if scrape is unreachable
+            # from the sandbox (common on restricted networks). Vision+reasoning
+            # can still run with an empty product-context string.
+            return (
+                f'{{"oxylabsError": "{type(exc).__name__}", '
+                f'"query": {json.dumps(query)}, '
+                f'"note": "Product scrape unavailable; continue with vision/reasoning."}}'
+            )
 
         return json.dumps(data, ensure_ascii=False)[:12_000]
