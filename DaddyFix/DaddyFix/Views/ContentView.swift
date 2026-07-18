@@ -89,7 +89,7 @@ struct ContentView: View {
                     .multilineTextAlignment(.center)
             }
 
-            TextField("Symptom / question", text: $app.symptomText)
+            TextField("What's wrong? e.g. mouse has no battery", text: $app.symptomText)
                 .textFieldStyle(.roundedBorder)
                 .font(.footnote)
 

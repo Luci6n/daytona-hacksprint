@@ -6,11 +6,19 @@ from backend.models import AnalysisResult, AnalyzeRequest, VisionObservation
 from backend.provider_errors import ProviderConfigurationError, ProviderResponseError
 
 
-VISION_PROMPT = """Inspect this home-repair image and return JSON only.
-Identify the device and visible issues. Produce normalized 0-to-1 image
-coordinates for useful AR highlights, arrows, and labels. Do not provide repair
-instructions; report only observations. Never claim to see a part that is not
-visible. The JSON must match the supplied schema exactly.
+VISION_PROMPT = """Inspect this photo of a real household object or repair scene.
+Return JSON only matching the supplied schema.
+
+Rules:
+- Identify what the device ACTUALLY is (mouse, keyboard, water heater, pipe, etc.).
+- List visible issues only (e.g. battery cover open, no batteries installed,
+  corrosion, crack, leak, tripped switch).
+- arAnnotations: put highlight/arrow/text ON the problem region in normalized
+  0..1 coordinates (top-left origin). Example: empty battery bay → highlight
+  that bay and label "Battery missing" or "Insert AA".
+- Never invent a Rinnai water heater or ELCB unless clearly visible.
+- Do not invent parts you cannot see.
+- Do not write long repair instructions here — observation only.
 """
 
 
@@ -36,7 +44,8 @@ class DoublewordVisionClient:
         schema = VisionObservation.model_json_schema(by_alias=True)
         text = (
             f"{VISION_PROMPT}\n"
-            f"Device hint: {request.device_hint or 'unknown'}\n"
+            f"Device hint (may be wrong — prefer the image): "
+            f"{request.device_hint or 'none'}\n"
             f"Reported symptom: {request.symptom or 'not provided'}\n"
             f"Required JSON schema: {schema}"
         )

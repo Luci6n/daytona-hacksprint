@@ -33,7 +33,8 @@ final class AppState: ObservableObject {
     @Published var showPayment = false
     @Published private(set) var statusMessage = "Point at the water heater, then Scan or Live."
     @Published private(set) var lastError: String?
-    @Published var symptomText: String = "No hot water"
+    /// User-facing symptom — e.g. "mouse has no battery" (not hardcoded water heater).
+    @Published var symptomText: String = ""
     @Published private(set) var backendHealthy: Bool?
     @Published var liveAutoAnalyze: Bool = true
 
@@ -98,8 +99,10 @@ final class AppState: ObservableObject {
             do {
                 let result = try await visionService.analyze(
                     image: image,
-                    symptom: symptom.isEmpty ? nil : symptom,
-                    deviceHint: APIConfig.defaultDeviceHint
+                    symptom: symptom.isEmpty
+                        ? "What is wrong with this device in the camera view?"
+                        : symptom,
+                    deviceHint: APIConfig.defaultDeviceHint // nil → trust the image
                 )
                 await apply(result, fromLive: false)
             } catch {
@@ -121,8 +124,12 @@ final class AppState: ObservableObject {
     func startLive() {
         lastError = nil
         voiceManager.stop()
-        liveSession.deviceHint = APIConfig.defaultDeviceHint
+        liveSession.deviceHint = APIConfig.defaultDeviceHint ?? ""
         liveSession.autoAnalyze = liveAutoAnalyze
+        liveSession.autoAnalyzePrompt =
+            "Look at the live camera scene. Identify the real device and problem "
+            + "(e.g. missing battery). Highlight the exact region that needs a fix. "
+            + "Do not invent a water heater."
         liveSession.frameInterval = 2.0
 
         liveSession.start(

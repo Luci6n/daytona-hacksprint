@@ -64,7 +64,7 @@ actor VisionService {
     func analyze(
         image: UIImage,
         symptom: String? = nil,
-        deviceHint: String? = APIConfig.defaultDeviceHint,
+        deviceHint: String? = APIConfig.defaultDeviceHint, // nil = no false prior
         maxEdge: CGFloat = 1280,
         compression: CGFloat = 0.72
     ) async throws -> AnalysisResult {

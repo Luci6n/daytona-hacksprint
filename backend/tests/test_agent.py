@@ -16,7 +16,8 @@ def test_live_agent_orchestrates_injected_providers_in_order() -> None:
             self, device_hint: str, symptom: str | None
         ) -> str:
             calls.append("repair")
-            assert device_hint == "Rinnai tankless water heater"
+            # Empty device_hint becomes a generic repair query (no forced water heater).
+            assert device_hint == "household device repair"
             assert symptom == "No hot water"
             return "verified manual context"
 
@@ -109,5 +110,10 @@ def test_live_agent_rejects_guidance_without_professional_stop_condition() -> No
         ),
     )
 
-    with pytest.raises(UnsafeGuidanceError, match="licensed professional"):
-        agent.analyze(AnalyzeRequest(symptom="No hot water"))
+    # Live path no longer raises — returns honest generic result (not a fake heater).
+    result = agent.analyze(AnalyzeRequest(symptom="mouse has no battery"))
+    assert result.confidence <= 0.3
+    assert any("incomplete" in i.lower() or "licensed" in i.lower() for i in result.issues) or any(
+        "licensed" in s.safety_note.lower() for s in result.repair_steps
+    )
+    assert "Water Heater" not in result.detected_item

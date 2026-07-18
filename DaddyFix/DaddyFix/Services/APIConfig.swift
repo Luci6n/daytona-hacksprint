@@ -19,7 +19,7 @@ enum APIConfig {
         }
         // Daytona signed preview (live providers). Re-deploy if expired / sandbox deleted.
         // Local LAN: return URL(string: "http://YOUR_MAC_IP:8000")!
-        return URL(string: "https://8000-9ij0xfsk79d7cnwv.daytonaproxy01.net")!
+        return URL(string: "https://8000-vaflvx0lv4vpyab0.daytonaproxy01.net")!
     }()
 
     /// WebSocket base derived from HTTP(S) base.
@@ -36,7 +36,8 @@ enum APIConfig {
     /// Offline / emergency only. Prefer server DEMO_MODE when available.
     static var forceLocalMock: Bool = false
 
-    static let defaultDeviceHint = "Rinnai tankless water heater"
+    /// Leave empty so the model trusts the camera, not a fake water-heater prior.
+    static let defaultDeviceHint: String? = nil
     static let analyzeTimeout: TimeInterval = 120
     static let speechTimeout: TimeInterval = 60
 }

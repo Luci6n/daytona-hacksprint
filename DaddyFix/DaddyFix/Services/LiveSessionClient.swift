@@ -47,9 +47,12 @@ final class LiveSessionClient: NSObject, ObservableObject {
     var autoAnalyze: Bool = true
 
     var autoAnalyzePrompt: String =
-        "Continuously monitor this scene. Report active leaks, drips, failures, or hazards and what to do safely."
+        "Look at this camera frame. Name the real device and the real problem "
+        + "(e.g. wireless mouse with battery cover open / no batteries). "
+        + "Highlight the empty battery compartment or broken part with arAnnotations. "
+        + "Do NOT invent a water heater or ELCB."
 
-    var deviceHint: String = APIConfig.defaultDeviceHint
+    var deviceHint: String = APIConfig.defaultDeviceHint ?? ""
 
     /// Called when a new AnalysisResult arrives from the live agent.
     var onAnalysis: ((AnalysisResult) -> Void)?
