@@ -1,7 +1,10 @@
 # DaddyFix status — why things fail + what’s left
 
-**Last update:** after Lucian ai& model fix + local live path investigation  
+**Last update:** code pushed `main` @ `886b445`; public Daytona DEMO URL live  
 **Audience:** Brian (iOS) · Lucian (backend/Daytona) · Kenji (ops)
+
+**Public API (works now):** `https://8000-u8mwnhxfpzuttscl.daytonaproxy01.net`  
+**Mode:** `DEMO_MODE=true` (reliable ELCB fixture; live vision blocked by Daytona egress)
 
 ---
 
