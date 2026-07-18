@@ -1,80 +1,123 @@
-# DaddyFix Backend (FastAPI + Kimi vision)
+# DaddyFix backend
 
-## Endpoints
+FastAPI backend for the DaddyFix iOS LiDAR app. It exposes the shared
+`AnalysisResult` JSON contract and orchestrates sponsor integrations.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/health` | Status + model flags + `ffmpeg` / RTSP readiness |
-| GET | `/analyze/mock` | Perfect water-heater `AnalysisResult` (no LLM) |
-| POST | `/analyze` | One-shot JSON `{ "imageBase64", "mimeType?", "hint?" }` |
-| POST | `/analyze/upload` | Multipart image file |
-| POST | `/stream/rtsp/start` | **Continuous**: sample RTSP camera every N sec → agent |
-| POST | `/stream/phone/start` | Open phone-driven live session |
-| POST | `/stream/phone/event` | iOS posts one live JPEG event |
-| GET | `/stream/{sessionId}/latest` | Latest `AnalysisResult` for AR refresh |
-| GET | `/stream/{sessionId}/status` | seq / errors / active |
-| POST | `/stream/{sessionId}/stop` | Stop RTSP loop |
+See [`../docs/backend-api.md`](../docs/backend-api.md) for the complete
+`VisionService.swift` integration contract, REST/WebSocket examples, error
+handling, and voice flow.
 
-Response shape matches iOS `AnalysisResult` (camelCase).
+## Architecture
 
-### Why RTSP (not only screenshots)
-
-A single still cannot show *change over time* (water dripping, flow starting).  
-RTSP is the standard control/media path for IP cameras (often port **554**).  
-Daytona **pulls** frames from the stream on an interval → Kimi reasons → JSON.  
-iPhone LiDAR still **places** AR pins (poll `/latest` or use phone events).
-
-```bash
-# Start continuous RTSP analysis
-curl -s -X POST http://127.0.0.1:8000/stream/rtsp/start \
-  -H 'Content-Type: application/json' \
-  -d '{"rtspUrl":"rtsp://user:pass@cam:554/stream1","intervalSec":2,"hint":"leaking pipe"}'
-
-# Poll results for AR
-curl -s http://127.0.0.1:8000/stream/<sessionId>/latest | jq
+```text
+backend/main.py                 Stable ASGI entrypoint
+backend/api/                    FastAPI app, routes, and HTTP error mapping
+backend/domain/                 Provider-independent Daddy Agent and ports
+backend/integrations/           Kimi, Doubleword, Oxylabs, and Nosana adapters
+backend/models.py               Shared Python-first AnalysisResult contract
+backend/speech_service/         Qwen3-TTS GPU service deployed on Nosana
 ```
 
-Install ffmpeg in Daytona: `apt-get update && apt-get install -y ffmpeg`
+The application factory injects sponsor adapters into the domain agent. This
+keeps demo mode deterministic and lets tests exercise the live orchestration
+without making paid network calls.
 
-## Local run
+## Credential setup
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-# .env already has keys locally; or: cp .env.example .env
-uvicorn main:app --host 0.0.0.0 --port 8000
+Use the repository-root `.env.local` for secrets. `.env` and `.env.local` are
+ignored by Git; `.env.example` documents every supported setting.
+
+Required for the live core flow:
+
+- `MOONSHOT_API_KEY`, or all three ai& settings
+  (`AIAND_API_KEY`, `AIAND_BASE_URL`, `AIAND_MODEL`)
+- `OXYLABS_USERNAME`
+- `OXYLABS_PASSWORD`
+
+Optional integrations:
+
+- `DOUBLEWORD_API_KEY` is required for visual observation on the ai& path and
+  also enables the second-pass safety audit. It is optional on the direct
+  Moonshot vision path.
+- `NOSANA_API_KEY` enables GPU market/job operations.
+- `NOSANA_TTS_URL` enables Qwen3-TTS audio through a Nosana GPU endpoint.
+- `DAYTONA_API_KEY` enables sandbox orchestration.
+- `OXYLABS_AI_STUDIO_API_KEY` is not required by Web Scraper API.
+
+`DEMO_MODE=true` returns the deterministic Rinnai/ELCB fixture without spending
+provider credits. Set it to `false` to require an image and call live providers.
+
+## Run locally
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --port 8000
 ```
 
-Test:
+Open `http://127.0.0.1:8000/docs` for the interactive API documentation.
 
-```bash
-curl -s http://127.0.0.1:8000/health | jq
-curl -s http://127.0.0.1:8000/analyze/mock | jq
+## API summary
+
+The detailed client contract is in [`../docs/backend-api.md`](../docs/backend-api.md). FastAPI also exposes
+interactive Swagger documentation at `http://127.0.0.1:8000/docs`.
+
+### `GET /health`
+
+Returns service status and boolean provider readiness. It never returns keys.
+
+### `POST /analyze`
+
+```json
+{
+  "symptom": "No hot water",
+  "deviceHint": "Rinnai tankless water heater",
+  "imageBase64": "data:image/jpeg;base64,..."
+}
 ```
 
-## Kimi / Moonshot
+In live mode, the agent:
 
-- Base URL: `https://api.moonshot.ai/v1` (OpenAI-compatible)
-- Env: `MOONSHOT_API_KEY`, `KIMI_MODEL` (default `kimi-k2.7-code`)
-- Mode: `VISION_MODE=kimi` or `mock`
+1. retrieves repair/manual context using Oxylabs;
+2. localizes visible parts with Doubleword's Qwen3-VL model when using ai&;
+3. asks Kimi through Moonshot or ai& to produce the repair guidance;
+4. validates the structured result against the Swift contract;
+5. optionally asks Doubleword to reject unsafe guidance.
 
-If the model id fails, try:
-- `kimi-k2.7-code`
-- `kimi-k2.5`
-- `moonshotai/kimi-k2.7-code` (some gateways)
+Provider failures return explicit `502`/`503` responses; they do not silently
+fall back to demo data when `DEMO_MODE=false`.
 
-On any Kimi error, API **falls back to mock** so the demo still works.
+### `WS /live/{sessionId}`
+
+Maintains the newest sampled camera frame and prior completed analysis for
+Gemini-Live-style follow-up turns. The iOS app sends JPEG frame, utterance, and
+interrupt events; the backend sends structured analysis followed by WAV audio.
+See the complete event sequence and barge-in rules in
+[`../docs/backend-api.md`](../docs/backend-api.md#ws-livesessionid).
+
+### `POST /speech/synthesize`
+
+Accepts `{"text": "Turn off the breaker first."}` and returns `audio/wav` from
+the configured Qwen3-TTS VoiceDesign service. Apple Speech recognition remains
+an iOS responsibility; the resulting transcript is sent to `/analyze` as the
+`symptom` field.
+
+The independently deployable GPU service lives in `backend/speech_service`.
+Build and push its Docker image, deploy `nosana-job.example.json` on Nosana,
+then copy the exposed URL
+into `NOSANA_TTS_URL`. Call the service's `/warmup` route once before the demo so
+the model weights are loaded.
 
 ## Daytona
 
-Deploy this folder in a Daytona sandbox, expose port 8000, set iOS:
+Install the orchestration-only dependency and run the sandbox smoke check:
 
-```text
-APIConfig.baseURL = https://YOUR-DAYTONA-PUBLIC-URL
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements-daytona.txt
+.\.venv\Scripts\python.exe -m backend.daytona_sandbox smoke
 ```
 
-## Security
+Deployment and cleanup commands are documented in
+[`../docs/deployment.md`](../docs/deployment.md).
 
-Never commit `.env`. Rotate keys if pasted in chat/Slack.
+The production container entrypoint is defined in `backend/Dockerfile`.

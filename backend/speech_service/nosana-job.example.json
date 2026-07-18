@@ -1,0 +1,37 @@
+{
+  "version": "0.1",
+  "type": "container",
+  "meta": {
+    "trigger": "dashboard",
+    "system_requirements": {
+      "required_vram": 16
+    }
+  },
+  "ops": [
+    {
+      "type": "container/run",
+      "id": "daddyfix-qwen3-tts",
+      "args": {
+        "image": "docker.io/luci6n/daddyfix-qwen3-tts:latest",
+        "env": {
+          "TTS_MODEL": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+        },
+        "gpu": true,
+        "expose": [
+          {
+            "port": 8000,
+            "health_checks": [
+              {
+                "type": "http",
+                "path": "/health",
+                "method": "GET",
+                "expected_status": 200,
+                "continuous": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

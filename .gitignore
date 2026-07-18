@@ -22,6 +22,15 @@ xcuserdata/
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+*.egg-info/
+.daytona/
 .env
 .env.*
 !.env.example
@@ -30,3 +39,8 @@ __pycache__/
 .idea/
 .vscode/
 *.swp
+
+# Local agent tooling
+.agents/
+skills-lock.json
+temp.txt

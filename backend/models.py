@@ -1,76 +1,87 @@
-"""Shared AnalysisResult contract — must match DaddyFix/Models/AnalysisResult.swift."""
+from typing import Annotated, Literal
 
-from __future__ import annotations
-
-from typing import Optional
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic.alias_generators import to_camel
 
 
-class ARAnnotation(BaseModel):
-    type: str = Field(description="highlight | arrow | circle | text")
-    x: float = Field(ge=0.0, le=1.0, description="Normalized 0-1, top-left origin")
-    y: float = Field(ge=0.0, le=1.0)
-    z: Optional[float] = None
-    width: Optional[float] = None
-    height: Optional[float] = None
-    label: str
-    color: Optional[str] = None
+class APIModel(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
 
 
-class RepairStep(BaseModel):
-    step: int
-    instruction: str
-    safetyNote: Optional[str] = None
+class AnalyzeRequest(APIModel):
+    symptom: str | None = None
+    device_hint: str | None = None
+    image_base64: str | None = None
 
 
-class BuyablePart(BaseModel):
+class SpeechRequest(APIModel):
+    text: str = Field(min_length=1, max_length=2_000)
+
+
+class LiveFrameEvent(APIModel):
+    type: Literal["frame"]
+    image_base64: str = Field(min_length=1, max_length=20_000_000)
+    device_hint: str | None = Field(default=None, max_length=500)
+
+
+class LiveUtteranceEvent(APIModel):
+    type: Literal["utterance"]
+    text: str = Field(min_length=1, max_length=2_000)
+
+
+class LiveInterruptEvent(APIModel):
+    type: Literal["interrupt"]
+    turn_id: str = Field(min_length=1, max_length=100)
+
+
+LiveClientEvent = Annotated[
+    LiveFrameEvent | LiveUtteranceEvent | LiveInterruptEvent,
+    Field(discriminator="type"),
+]
+live_client_event_adapter: TypeAdapter[LiveClientEvent] = TypeAdapter(
+    LiveClientEvent
+)
+
+
+class ARAnnotation(APIModel):
+    type: Literal["highlight", "arrow", "circle", "text"]
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    z: float | None = None
+    width: float | None = Field(default=None, ge=0, le=1)
+    height: float | None = Field(default=None, ge=0, le=1)
+    label: str = Field(min_length=1, max_length=500)
+    color: str | None = None
+
+
+class RepairStep(APIModel):
+    step: int = Field(ge=1)
+    instruction: str = Field(min_length=1, max_length=2_000)
+    safety_note: str = Field(min_length=1, max_length=2_000)
+
+
+class BuyablePart(APIModel):
     id: str
     name: str
-    estimatedPrice: str
-    x402Ready: bool = False
+    estimated_price: str
+    x402_ready: bool
 
 
-class AnalysisResult(BaseModel):
-    detectedItem: str
-    confidence: float
+class AnalysisResult(APIModel):
+    detected_item: str = Field(min_length=1, max_length=500)
+    confidence: float = Field(ge=0, le=1)
     issues: list[str]
-    arAnnotations: list[ARAnnotation]
-    repairSteps: list[RepairStep]
-    buyableParts: list[BuyablePart]
-    # Optional live-stream metadata (ignored by older clients if absent — we always can omit)
-    sessionId: Optional[str] = None
-    seq: Optional[int] = None
-    eventType: Optional[str] = None  # "snapshot" | "live" | "rtsp"
+    ar_annotations: list[ARAnnotation]
+    repair_steps: list[RepairStep]
+    buyable_parts: list[BuyablePart]
 
 
-class AnalyzeRequest(BaseModel):
-    """iOS can POST JSON with base64 image, or multipart file via /analyze."""
-
-    imageBase64: Optional[str] = None
-    mimeType: str = "image/jpeg"
-    hint: Optional[str] = "Rinnai tankless water heater / home repair"
-
-
-class StreamStartRTSPRequest(BaseModel):
-    """Start continuous analysis by sampling an RTSP camera URL on Daytona."""
-
-    rtspUrl: str = Field(description="rtsp://user:pass@host:554/stream")
-    hint: Optional[str] = "Detect leaks, drips, flowing water, trip events over time"
-    intervalSec: float = 2.0
-    sessionId: Optional[str] = None
-
-
-class StreamStartPhoneRequest(BaseModel):
-    hint: Optional[str] = None
-    sessionId: Optional[str] = None
-
-
-class StreamPhoneEventRequest(BaseModel):
-    """Phone-side live event (Brian) — same agent path as RTSP samples."""
-
-    sessionId: str
-    imageBase64: str
-    mimeType: str = "image/jpeg"
-    seq: Optional[int] = None
-    hint: Optional[str] = None
+class VisionObservation(APIModel):
+    detected_item: str
+    confidence: float
+    visible_issues: list[str]
+    ar_annotations: list[ARAnnotation]
