@@ -17,9 +17,10 @@ enum APIConfig {
            let url = URL(string: env) {
             return url
         }
-        // Public Daytona (DEMO_MODE=true → reliable fixture). Re-deploy if expired.
-        // For live vision on Mac: http://YOUR_WIFI_IP:8000 with local uvicorn.
-        return URL(string: "https://8000-u8mwnhxfpzuttscl.daytonaproxy01.net")!
+        // LIVE VISION path: Mac uvicorn + ngrok tunnel (Daytona sandbox has no egress
+        // to ai&/Doubleword). Keep Mac terminal + ngrok running during demo.
+        // Fallback Daytona DEMO: https://8000-u8mwnhxfpzuttscl.daytonaproxy01.net
+        return URL(string: "https://coretta-biauricular-remy.ngrok-free.dev")!
     }()
 
     /// WebSocket base derived from HTTP(S) base.

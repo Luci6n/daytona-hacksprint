@@ -3,8 +3,10 @@
 **Last update:** code pushed `main` @ `886b445`; public Daytona DEMO URL live  
 **Audience:** Brian (iOS) · Lucian (backend/Daytona) · Kenji (ops)
 
-**Public API (works now):** `https://8000-u8mwnhxfpzuttscl.daytonaproxy01.net`  
-**Mode:** `DEMO_MODE=true` (reliable ELCB fixture; live vision blocked by Daytona egress)
+**Live vision (works now via Mac+ngrok):** `https://coretta-biauricular-remy.ngrok-free.dev`  
+**Mode:** `DEMO_MODE=false` on Mac uvicorn; ai& `qwen/qwen3.6-27b` + Doubleword  
+**Daytona:** process works but **no egress** to ai&/Doubleword → use ngrok bridge for live vision  
+**Keep Mac awake:** terminal must keep `uvicorn` + `ngrok http 8000` running
 
 ---
 

@@ -49,7 +49,9 @@ actor VisionService {
 
     func health() async throws -> HealthResponse {
         let url = baseURL.appendingPathComponent("health")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        var request = URLRequest(url: url)
+        Self.applyCommonHeaders(to: &request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         try Self.validate(response: response, data: data)
         return try JSONDecoder().decode(HealthResponse.self, from: data)
     }
@@ -92,6 +94,7 @@ actor VisionService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        Self.applyCommonHeaders(to: &request)
         request.timeoutInterval = APIConfig.analyzeTimeout
 
         // Lucian accepts data URL or raw base64; data URL recommended.
@@ -179,6 +182,12 @@ actor VisionService {
     }
 
     // MARK: - Helpers
+
+    /// ngrok free tier interstitial can break URLSession without this header.
+    private static func applyCommonHeaders(to request: inout URLRequest) {
+        request.setValue("1", forHTTPHeaderField: "ngrok-skip-browser-warning")
+        request.setValue("DaddyFix-iOS", forHTTPHeaderField: "User-Agent")
+    }
 
     private static func validate(response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { return }
