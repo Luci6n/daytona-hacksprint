@@ -16,11 +16,11 @@ For the hackathon MVP:
 - send no passive frames, or one every 3–5 seconds, while idle;
 - always send a fresh high-resolution keyframe when a turn starts, the user
   taps an AR object, or the transcript refers to "this", "that", or "here";
-- keep Apple Speech on-device and send partial/final transcript events, not raw
-  microphone audio;
+- keep Apple Speech on-device, use partial text only for local barge-in, and
+  send final transcript events instead of raw microphone audio;
 - stop TTS locally before waiting for the backend to acknowledge an interrupt;
-- keep only the newest passive frame plus explicitly referenced keyframes in
-  session state.
+- keep only the newest passive frame in the MVP; explicitly retained keyframes
+  are a phase-two improvement.
 
 This gives the user the important Gemini-Live-like behavior—an open camera,
 persistent visual context, follow-up questions, and barge-in—without pretending
@@ -170,7 +170,7 @@ ARKit camera + LiDAR (local 30/60 FPS)
         +-- persistent AR rendering and world anchors
         |
         +-- sampled JPEG/keyframe -------------------------+
-Apple Speech partial/final transcript --------------------+-- FastAPI /live WebSocket
+Apple Speech final transcript ----------------------------+-- FastAPI /live WebSocket
                                                          |
                                                    latest-frame cache
                                                    turn + analysis history
@@ -191,8 +191,8 @@ Apple Speech partial/final transcript --------------------+-- FastAPI /live WebS
 - **Turn start:** capture one fresh keyframe immediately.
 - **Tap/deictic reference:** capture a fresh high-resolution keyframe and attach
   tap coordinates and LiDAR/raycast depth.
-- **Retention:** replace the passive frame in memory; retain only keyframes that
-  a conversation turn references.
+- **Retention:** the MVP replaces the passive frame in memory. Retaining
+  explicitly referenced keyframes is a later upgrade.
 
 A future frame envelope should include `frameId`, capture timestamp,
 orientation, normalized tap point, and optional raycast depth. The first MVP can

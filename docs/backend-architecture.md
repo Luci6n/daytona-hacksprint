@@ -100,6 +100,11 @@ credential returns a clear `503` rather than preventing the API from starting.
 
 Live provider failures never silently return the demo fixture.
 
+Oxylabs supports two explicit credential products. The current hackathon
+profile uses `residential_proxy` mode to retrieve search pages through
+`pr.oxylabs.io`; `web_scraper_api` mode uses the structured Realtime API only
+when a separate Web Scraper API user is configured.
+
 ## Dependency injection and testing
 
 `create_app()` accepts agent and speech factories. `DaddyAgent` accepts provider
