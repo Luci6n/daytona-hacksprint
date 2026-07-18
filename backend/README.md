@@ -3,8 +3,9 @@
 FastAPI backend for the DaddyFix iOS LiDAR app. It exposes the shared
 `AnalysisResult` JSON contract and orchestrates sponsor integrations.
 
-See [`../docs/backend-api.md`](../docs/backend-api.md) for the complete `VisionService.swift` integration
-contract, request/response examples, error handling, and voice flow.
+See [`../docs/backend-api.md`](../docs/backend-api.md) for the complete
+`VisionService.swift` integration contract, REST/WebSocket examples, error
+handling, and voice flow.
 
 ## Architecture
 
@@ -35,7 +36,9 @@ Required for the live core flow:
 
 Optional integrations:
 
-- `DOUBLEWORD_API_KEY` enables the second-pass safety audit.
+- `DOUBLEWORD_API_KEY` is required for visual observation on the ai& path and
+  also enables the second-pass safety audit. It is optional on the direct
+  Moonshot vision path.
 - `NOSANA_API_KEY` enables GPU market/job operations.
 - `NOSANA_TTS_URL` enables Qwen3-TTS audio through a Nosana GPU endpoint.
 - `DAYTONA_API_KEY` enables sandbox orchestration.
@@ -84,6 +87,14 @@ In live mode, the agent:
 Provider failures return explicit `502`/`503` responses; they do not silently
 fall back to demo data when `DEMO_MODE=false`.
 
+### `WS /live/{sessionId}`
+
+Maintains the newest sampled camera frame and prior completed analysis for
+Gemini-Live-style follow-up turns. The iOS app sends JPEG frame, utterance, and
+interrupt events; the backend sends structured analysis followed by WAV audio.
+See the complete event sequence and barge-in rules in
+[`../docs/backend-api.md`](../docs/backend-api.md#ws-livesessionid).
+
 ### `POST /speech/synthesize`
 
 Accepts `{"text": "Turn off the breaker first."}` and returns `audio/wav` from
@@ -92,8 +103,8 @@ an iOS responsibility; the resulting transcript is sent to `/analyze` as the
 `symptom` field.
 
 The independently deployable GPU service lives in `backend/speech_service`.
-Build and push its Docker image, replace `YOUR_USERNAME` in
-`nosana-job.example.json`, deploy that job on Nosana, then copy the exposed URL
+Build and push its Docker image, deploy `nosana-job.example.json` on Nosana,
+then copy the exposed URL
 into `NOSANA_TTS_URL`. Call the service's `/warmup` route once before the demo so
 the model weights are loaded.
 

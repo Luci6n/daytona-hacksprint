@@ -26,6 +26,16 @@ iOS / VoiceManager
 POST /speech/synthesize
         |
         +--> Nosana-hosted Qwen3-TTS GPU service
+
+iOS live camera session
+        |
+        v
+WS /live/{sessionId}                    backend/api/live.py
+        |
+        +--> connection-local latest frame + prior analysis
+        +--> DaddyAgent analysis task
+        +--> AnalysisResult event
+        +--> Nosana WAV metadata + binary audio
 ```
 
 ## Layer boundaries
@@ -39,7 +49,8 @@ POST /speech/synthesize
 ### HTTP layer — `backend/api/`
 
 - Builds the FastAPI application.
-- Defines `/health`, `/analyze`, and `/speech/synthesize`.
+- Defines `/health`, `/analyze`, `/speech/synthesize`, and the `/live/{sessionId}`
+  WebSocket.
 - Converts domain/provider exceptions into the documented HTTP error contract.
 - Does not contain sponsor SDK logic.
 
@@ -104,6 +115,21 @@ Current contract tests cover:
 - TTS WAV behavior and text validation;
 - OpenAPI route exposure;
 - Daytona environment filtering and CLI defaults.
+- live frame state, follow-up context, WAV delivery, and interruption acknowledgement.
+
+## Live-session sequence and limitations
+
+`backend/api/live.py` keeps one `LiveSessionState` per WebSocket connection. A
+frame event replaces the cached image. An utterance starts an asyncio task that
+runs the synchronous agent and speech adapters in worker threads, allowing the
+receive loop to process an interrupt while analysis is in progress.
+
+Cancelling that asyncio task prevents old analysis/audio from being delivered,
+but Python cannot terminate a synchronous provider request already running in
+`asyncio.to_thread`. The iOS client therefore stops audio locally and rejects
+late events by `turnId`. The current TTS handoff sends a complete WAV rather
+than streaming chunks, and live state does not survive reconnects or multiple
+backend replicas.
 
 ## Extension rules
 

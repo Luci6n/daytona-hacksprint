@@ -8,6 +8,7 @@ for product scope.
 | --- | --- | --- |
 | [`backend-api.md`](backend-api.md) | Kenji, backend consumers | Paste-ready `/analyze` and TTS contract, samples, Swift sketch, errors. |
 | [`backend-architecture.md`](backend-architecture.md) | Backend contributors | Layer boundaries, provider ports, request sequences, extension rules. |
+| [`live-camera-research.md`](live-camera-research.md) | Whole team | Primary-source comparison of Gemini Live, OpenAI Realtime, LiveKit, and Pipecat, plus the recommended camera and interruption design. |
 | [`deployment.md`](deployment.md) | Lucian, demo operator | Local startup, Daytona API deployment, Nosana TTS deployment, cleanup. |
 | [`sponsor-integrations.md`](sponsor-integrations.md) | Team, judges | Exact role of every sponsor, configuration, and failure behavior. |
 | [`team-handoff.md`](team-handoff.md) | Kenji and Brian | Shared-model status, VisionService checklist, AR coordinate semantics. |

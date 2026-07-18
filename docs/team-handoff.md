@@ -58,6 +58,24 @@ The complete paste-ready request, response, Swift sketch, and error table are in
 - Fall back to `AVSpeechSynthesizer` only as an explicit degraded mode if the
   Nosana service is unavailable.
 
+## Kenji — live camera and interruption checklist
+
+- Keep ARKit rendering locally; send sampled JPEGs, not a 30 FPS video stream.
+- Open one `WS /live/{sessionId}` connection and wait for `ready`.
+- Send up to 1 FPS while speaking and a fresh keyframe before each utterance.
+- Use Apple Speech partial text only to detect barge-in; send final text as the
+  `utterance` event.
+- Track the server-issued `turnId` for analysis and audio.
+- On barge-in, stop and flush audio locally first, then send `interrupt`.
+- Ignore late messages whose `turnId` is no longer current.
+- Enable voice processing/echo cancellation while listening during TTS.
+- Expect complete binary WAV after the `audio` metadata event; streaming chunks
+  are not implemented yet.
+
+The complete event contract is in [`backend-api.md`](backend-api.md#ws-livesessionid),
+and the design evidence is in
+[`live-camera-research.md`](live-camera-research.md).
+
 ## Brian — AR annotation checklist
 
 - `x` and `y` are normalized to the captured image with top-left origin.

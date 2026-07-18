@@ -95,6 +95,10 @@ The helper:
 Verify `<PREVIEW_URL>/health` and `<PREVIEW_URL>/docs`. A signed preview URL
 contains access material; share it only with the integration team.
 
+For live-camera integration, convert the preview origin from `https://` to
+`wss://` and append `/live/<session-id>`. Verify that the chosen preview/proxy
+supports WebSocket upgrades before handing the URL to Kenji.
+
 Delete the sandbox immediately after the demo:
 
 ```powershell
@@ -114,9 +118,9 @@ The Docker build context must be the repository root:
 ```powershell
 docker build `
   -f backend/speech_service/Dockerfile `
-  -t docker.io/YOUR_USERNAME/daddyfix-qwen3-tts:latest `
+  -t docker.io/luci6n/daddyfix-qwen3-tts:latest `
   .
-docker push docker.io/YOUR_USERNAME/daddyfix-qwen3-tts:latest
+docker push docker.io/luci6n/daddyfix-qwen3-tts:latest
 ```
 
 The image uses CUDA, Python 3.12, and the official `qwen-tts` package. Model
@@ -125,13 +129,12 @@ weights download on the first start, so initial startup is slower.
 ## Deploy TTS to Nosana
 
 1. Copy `backend/speech_service/nosana-job.example.json`.
-2. Replace `YOUR_USERNAME` with the pushed image owner.
-3. Select a Nosana market with at least the requested 16 GB VRAM.
-4. Create a deployment in the Nosana dashboard, or post the job definition with
+2. Select a Nosana market with at least the requested 16 GB VRAM.
+3. Create a deployment in the Nosana dashboard, or post the job definition with
    the Nosana CLI.
-5. Copy the exposed service URL to `NOSANA_TTS_URL` in the backend environment.
-6. Call `<NOSANA_TTS_URL>/warmup` before the demo.
-7. Confirm `<NOSANA_TTS_URL>/health` reports `modelLoaded: true`.
+4. Copy the exposed service URL to `NOSANA_TTS_URL` in the backend environment.
+5. Call `<NOSANA_TTS_URL>/warmup` before the demo.
+6. Confirm `<NOSANA_TTS_URL>/health` reports `modelLoaded: true`.
 
 Nosana exposes long-running container services through the `expose` field in a
 job definition. See the
@@ -150,5 +153,6 @@ The service endpoints are:
 - `POST /analyze` decodes into the checked-in Swift fixture.
 - Nosana TTS has been warmed and `/speech/synthesize` returns `audio/wav`.
 - The iPhone can reach the Daytona signed URL over its current network.
+- The public proxy accepts a `wss://.../live/<session-id>` WebSocket upgrade.
 - The Daytona sandbox ID and Nosana deployment ID are recorded for cleanup.
 - No `.env`, `.env.local`, API key, or preview token is committed.
