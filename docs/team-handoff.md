@@ -16,7 +16,7 @@ Do **not** assign Swift files to Kenji (Xcode unavailable; causes wrong ownershi
 | --- | --- | --- | --- |
 | `detectedItem` | `detected_item` alias | `detectedItem` | Matched |
 | `confidence` | `confidence` | `confidence` | Matched |
-| `riskLevel` | `risk_level` alias | Not added yet | Kenji must mirror before displaying risk |
+| `riskLevel` | `risk_level` alias | Not added yet | Brian must mirror before displaying risk |
 | `issues` | `issues` | `issues` | Matched |
 | `arAnnotations` | `ar_annotations` alias | `arAnnotations` | Matched |
 | `repairSteps` | `repair_steps` alias | `repairSteps` | Matched |
