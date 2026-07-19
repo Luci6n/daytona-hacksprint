@@ -46,10 +46,12 @@ Primary reference: [Daytona Network Limits (Firewall)](https://www.daytona.io/do
 
 ## Required DaddyFix allowlist
 
-For the current `DEMO_MODE=false` route, allow:
+For the full deploy-and-run lifecycle, allow:
 
 | Integration | Required hostname | Note |
 | --- | --- | --- |
+| Repository clone | `github.com` | Required by `sandbox.git.clone` in the current managed target. |
+| Python packages | `pypi.org`, `files.pythonhosted.org` | Required while installing `backend/requirements.txt`. |
 | Oxylabs Web Scraper API | `realtime.oxylabs.io` | Current `web_scraper_api` mode; HTTPS on 443. |
 | Doubleword | `api.doubleword.ai` | Vision and final safety audit. |
 | ai& | `api.aiand.com` | AnalysisResult generation. |
@@ -59,7 +61,7 @@ Do not put schemes, paths, ports, query strings, credentials, or bearer tokens
 in `domain_allow_list`. Daytona accepts comma-separated hostnames, supports a
 leading `*.` wildcard, treats `*.example.com` as covering the base and
 subdomains, and allows at most 20 entries. Setting a domain list restricts other
-external domains, so every runtime dependency must be included. See Daytona's
+external domains, so every setup and runtime dependency must be included. See Daytona's
 [domain allowlist format](https://www.daytona.io/docs/en/network-limits/#domain-allow-list-format).
 
 If the Nosana endpoint is routinely recreated, either rebuild the exact list
@@ -98,12 +100,12 @@ def required_egress_domains(settings: Settings) -> str:
         settings.aiand_base_url,
         settings.nosana_tts_url,
     )
-    hosts = {
-        urlsplit(url).hostname
-        for url in urls
-        if url and urlsplit(url).hostname
-    }
-    return ",".join(sorted(hosts))
+    hosts = ["github.com", "pypi.org", "files.pythonhosted.org"]
+    for url in urls:
+        hostname = urlsplit(url).hostname if url else None
+        if hostname and hostname not in hosts:
+            hosts.append(hostname)
+    return ",".join(hosts)
 
 
 sandbox = daytona.create(
@@ -119,7 +121,7 @@ Daytona documents `network_block_all`, `network_allow_list`, and
 `domain_allow_list` on the Python creation base class, including image-based
 sandboxes: [Python SDK creation parameters](https://www.daytona.io/docs/en/python-sdk/sync/daytona/#createsandboxbaseparams).
 
-### Existing running sandbox
+### Existing running sandbox (Tier 3/4)
 
 No stop/start is required:
 
@@ -150,9 +152,19 @@ Daytona currently documents these defaults:
 See [tier-based network restrictions](https://www.daytona.io/docs/en/network-limits/#tier-based-network-restrictions)
 and [Daytona limits and upgrade requirements](https://www.daytona.io/docs/en/limits/#tiers).
 
-The successful `domain_allow_list="example.com"` test proves that the current
-organization accepts a per-sandbox exception; it does not by itself identify
-the organization's tier.
+The successful create-time `domain_allow_list="example.com"` test proves that
+the current environment honors a creation-time exception; it does not by
+itself identify the organization's tier. Applying the same setting to the
+already-created public sandbox returned Daytona's documented tier-restriction
+validation error, so DaddyFix must create a replacement sandbox with the list
+instead of updating the current one.
+
+A fresh sandbox containing only the four runtime hosts also received
+`Forbidden` from `sandbox.git.clone`. Adding `github.com`, `pypi.org`, and
+`files.pythonhosted.org` is therefore required for this deployer despite those
+services appearing in Daytona's essential-services table. The failed sandbox
+was deleted; the next deployment should use the complete seven-host list at
+creation.
 
 Daytona also exposes the organization-level
 `sandbox-default-limited-network-egress` API and the organization object exposes

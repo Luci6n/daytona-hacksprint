@@ -87,8 +87,8 @@ helper does not accept a Git token on the command line.
 The helper:
 
 1. creates a private Python 3.12 sandbox with a six-hour TTL;
-2. applies a least-privilege Daytona `domain_allow_list` for the configured
-   Oxylabs, Doubleword, ai&, and Nosana TTS hosts;
+2. applies a least-privilege Daytona `domain_allow_list` for GitHub/PyPI setup
+   plus the configured Oxylabs, Doubleword, ai&, and Nosana TTS hosts;
 3. passes runtime provider configuration into the sandbox, but never the
    Daytona, Moonshot, or Nosana control-plane keys;
 4. clones the selected branch and installs backend requirements;

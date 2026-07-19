@@ -40,7 +40,7 @@ def test_deploy_cli_defaults_to_feature_branch_and_six_hour_ttl() -> None:
     assert args.preview_expiry_seconds == 21_600
 
 
-def test_deploy_explicitly_allows_only_live_provider_domains() -> None:
+def test_deploy_explicitly_allows_only_required_domains() -> None:
     settings = Settings(  # type: ignore[call-arg]
         _env_file=None,
         oxylabs_realtime_url=(
@@ -66,6 +66,7 @@ def test_deploy_explicitly_allows_only_live_provider_domains() -> None:
 
     create_params = daytona.create.call_args.args[0]
     assert create_params.domain_allow_list == (
+        "github.com,pypi.org,files.pythonhosted.org,"
         "realtime.oxylabs.test,api.doubleword.test,"
         "api.aiand.test,tts.nosana.test"
     )
