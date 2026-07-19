@@ -68,6 +68,11 @@ Use an inference key, not a platform-management key. The default vision model is
 2. reject unsafe final steps involving gas, energized electrical work, bypassed
    safety equipment, missing warnings, or unjustified certainty.
 
+Both calls use Doubleword's strict JSON-schema structured-output mode rather
+than plain JSON mode. This prevents the selected Qwen3-VL model from omitting a
+required field or returning an invalid enum during the live workflow. See the
+[Doubleword structured-output documentation](https://docs.doubleword.ai/inference-api/tool-calling/).
+
 ## Failure policy
 
 - Configuration missing: `503`.
