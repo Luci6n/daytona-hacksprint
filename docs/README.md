@@ -12,6 +12,7 @@ for product scope.
 | [`deployment.md`](deployment.md) | Lucian, demo operator | Local startup, Daytona API deployment, Nosana TTS deployment, cleanup. |
 | [`sponsor-integrations.md`](sponsor-integrations.md) | Team, judges | Exact role of every sponsor, configuration, and failure behavior. |
 | [`team-handoff.md`](team-handoff.md) | Kenji and Brian | Shared-model status, VisionService checklist, AR coordinate semantics. |
+| [`verification-status.md`](verification-status.md) | Team, demo operator | Live evidence, public-demo limits, and remaining iPhone checks. |
 
 FastAPI also serves generated OpenAPI documentation at `/docs` and
 `/openapi.json` while the backend is running.
