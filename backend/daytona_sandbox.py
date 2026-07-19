@@ -2,6 +2,7 @@
 
 import argparse
 from collections.abc import Sequence
+from urllib.parse import urlsplit
 
 from daytona import (
     CreateSandboxFromImageParams,
@@ -16,10 +17,8 @@ from backend.config import Settings
 SANDBOX_ENV_FIELDS = {
     "APP_ENV": "app_env",
     "DEMO_MODE": "demo_mode",
-    "MOONSHOT_API_KEY": "moonshot_api_key",
     "KIMI_BASE_URL": "kimi_base_url",
     "KIMI_MODEL": "kimi_model",
-    "NOSANA_API_KEY": "nosana_api_key",
     "NOSANA_BASE_URL": "nosana_base_url",
     "NOSANA_TTS_URL": "nosana_tts_url",
     "NOSANA_TTS_BEARER_TOKEN": "nosana_tts_bearer_token",
@@ -41,6 +40,13 @@ SANDBOX_ENV_FIELDS = {
     "AIAND_MODEL": "aiand_model",
 }
 
+SANDBOX_PROVIDER_URL_FIELDS = (
+    "oxylabs_realtime_url",
+    "doubleword_base_url",
+    "aiand_base_url",
+    "nosana_tts_url",
+)
+
 
 def sandbox_environment(settings: Settings) -> dict[str, str]:
     environment: dict[str, str] = {}
@@ -53,6 +59,20 @@ def sandbox_environment(settings: Settings) -> dict[str, str]:
         else:
             environment[env_name] = str(value)
     return environment
+
+
+def sandbox_domain_allow_list(settings: Settings) -> str:
+    domains: list[str] = []
+    for field_name in SANDBOX_PROVIDER_URL_FIELDS:
+        provider_url = getattr(settings, field_name)
+        if not provider_url:
+            continue
+        hostname = urlsplit(provider_url).hostname
+        if hostname:
+            normalized_hostname = hostname.lower().rstrip(".")
+            if normalized_hostname not in domains:
+                domains.append(normalized_hostname)
+    return ",".join(domains)
 
 
 def build_daytona(settings: Settings) -> Daytona:
@@ -99,6 +119,7 @@ def deploy(
             name="daddyfix-api",
             image="python:3.12-slim",
             env_vars=sandbox_environment(settings),
+            domain_allow_list=sandbox_domain_allow_list(settings),
             public=False,
             ttl_minutes=ttl_minutes,
             auto_delete_interval=ttl_minutes,

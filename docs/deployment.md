@@ -36,7 +36,7 @@ Teammates do not need every field from `.env.example`:
 | --- | --- |
 | Kenji/Brian call a deployed API | Backend base URL in the iOS app; no sponsor credentials. |
 | Local deterministic demo | `DEMO_MODE=true`; no sponsor credentials. |
-| Live analysis through ai& | `DEMO_MODE=false`, Oxylabs proxy username/password with `OXYLABS_MODE=residential_proxy`, complete ai& key/base/model, and a Doubleword inference key for image observation. |
+| Live analysis through ai& | `DEMO_MODE=false`, Oxylabs Web Scraper API username/password with `OXYLABS_MODE=web_scraper_api`, complete ai& key/base/model, and a Doubleword inference key for image observation. |
 | Live analysis through Moonshot | `DEMO_MODE=false`, Oxylabs credentials/mode, and a Moonshot key. Doubleword is optional for the final safety audit. |
 | Call deployed sugar-daddy TTS | `NOSANA_TTS_URL`; bearer token only if the deployed endpoint adds one. |
 | Create/manage Nosana deployment | `NOSANA_API_KEY` on the operator's machine. |
@@ -87,11 +87,21 @@ helper does not accept a Git token on the command line.
 The helper:
 
 1. creates a private Python 3.12 sandbox with a six-hour TTL;
-2. passes only backend provider configuration—not the Daytona control key—into
-   the sandbox environment;
-3. clones the selected branch and installs backend requirements;
-4. starts Uvicorn on port 8000 in a persistent session;
-5. prints the sandbox ID and a six-hour signed preview URL.
+2. applies a least-privilege Daytona `domain_allow_list` for the configured
+   Oxylabs, Doubleword, ai&, and Nosana TTS hosts;
+3. passes runtime provider configuration into the sandbox, but never the
+   Daytona, Moonshot, or Nosana control-plane keys;
+4. clones the selected branch and installs backend requirements;
+5. starts Uvicorn on port 8000 in a persistent session;
+6. prints the sandbox ID and a six-hour signed preview URL.
+
+Daytona's outbound firewall can reset TLS before a request reaches a provider.
+Do not treat that reset as an expired sponsor key. The deploy helper derives
+hostnames from provider URLs and sends them as `domain_allow_list`; it never
+copies URL credentials, paths, ports, or query strings into the rule. See
+[`daytona-outbound-network.md`](daytona-outbound-network.md) for the reproduced
+failure, official Daytona constraints, live-update command, and verification
+checklist.
 
 Verify `<PREVIEW_URL>/health` and `<PREVIEW_URL>/docs`. A signed preview URL
 contains access material; share it only with the integration team.
