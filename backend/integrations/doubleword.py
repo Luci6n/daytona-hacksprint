@@ -1,4 +1,6 @@
 from openai import OpenAI
+from openai.types.shared_params import ResponseFormatJSONSchema
+from pydantic import BaseModel
 
 from backend.config import Settings
 from backend.domain.ports import SafetyVerdict
@@ -20,6 +22,20 @@ Rules:
 - Do not invent parts you cannot see.
 - Do not write long repair instructions here — observation only.
 """
+
+
+def structured_output_format(
+    name: str,
+    model: type[BaseModel],
+) -> ResponseFormatJSONSchema:
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "strict": True,
+            "schema": model.model_json_schema(by_alias=True),
+        },
+    }
 
 
 class DoublewordVisionClient:
@@ -61,7 +77,10 @@ class DoublewordVisionClient:
                         ],
                     }
                 ],
-                response_format={"type": "json_object"},
+                response_format=structured_output_format(
+                    "vision_observation",
+                    VisionObservation,
+                ),
                 temperature=0,
             )
         except Exception as exc:
@@ -103,7 +122,10 @@ class DoublewordSafetyClient:
             response = self._client.chat.completions.create(
                 model=self._settings.doubleword_model,
                 messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
+                response_format=structured_output_format(
+                    "safety_verdict",
+                    SafetyVerdict,
+                ),
                 temperature=0,
             )
         except Exception as exc:
