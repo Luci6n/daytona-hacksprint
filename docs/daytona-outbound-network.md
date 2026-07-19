@@ -28,10 +28,10 @@ This diagnosis was confirmed in the current environment:
 - Inbound signed previews already worked; inbound previews and outbound egress
   are separate paths.
 
-The strongest fix for DaddyFix is therefore to explicitly allow only the live
-provider hostnames. This is a supported Daytona setting and is narrower than
-requesting unrestricted internet access. The full sponsor chain still has to be
-re-run after the provider allowlist is applied.
+The strongest fix for DaddyFix is therefore to explicitly allow only the setup
+and live-provider hostnames. This is a supported Daytona setting and is narrower
+than requesting unrestricted internet access. After applying it at creation,
+the authenticated public REST and WebSocket-to-WAV chains both passed.
 
 Primary reference: [Daytona Network Limits (Firewall)](https://www.daytona.io/docs/en/network-limits/).
 
@@ -42,7 +42,7 @@ Primary reference: [Daytona Network Limits (Firewall)](https://www.daytona.io/do
 | Documented by Daytona | Network restrictions are tier-aware; domain allowlists are supported on create and update; running updates need no restart; domain syntax and limits are defined. |
 | Observed in DaddyFix | A reset became HTTP 200 after allowing `example.com`, and all four explicitly allowed provider hosts completed TLS and returned HTTP responses in a fresh sandbox. |
 | Inference | The original resets were enforcement by Daytona's outbound firewall rather than a CA/TLS defect. This is strongly supported by the controlled allowlist result, but Daytona does not document `Errno 104` as the firewall's guaranteed error signature. |
-| Not yet established by the transport probe | Provider authentication, inference output, and Nosana WAV output from inside Daytona. Those require the authenticated end-to-end checks below. |
+| Established by the authenticated public probe | Oxylabs, Doubleword, ai&, and Nosana TTS readiness; `/analyze` HTTP 200; schema-valid WebSocket analysis; 833,324-byte RIFF/WAVE output. |
 
 ## Required DaddyFix allowlist
 
