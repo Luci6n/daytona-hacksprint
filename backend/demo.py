@@ -83,6 +83,7 @@ def generic_unavailable_result(
     return AnalysisResult(
         detected_item=label[:500],
         confidence=0.15,
+        risk_level="medium",
         issues=[
             issue,
             f"Live analysis incomplete: {reason}",
