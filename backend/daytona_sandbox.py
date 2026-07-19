@@ -47,6 +47,12 @@ SANDBOX_PROVIDER_URL_FIELDS = (
     "nosana_tts_url",
 )
 
+SANDBOX_SETUP_DOMAINS = (
+    "github.com",
+    "pypi.org",
+    "files.pythonhosted.org",
+)
+
 
 def sandbox_environment(settings: Settings) -> dict[str, str]:
     environment: dict[str, str] = {}
@@ -62,7 +68,7 @@ def sandbox_environment(settings: Settings) -> dict[str, str]:
 
 
 def sandbox_domain_allow_list(settings: Settings) -> str:
-    domains: list[str] = []
+    domains = list(SANDBOX_SETUP_DOMAINS)
     for field_name in SANDBOX_PROVIDER_URL_FIELDS:
         provider_url = getattr(settings, field_name)
         if not provider_url:
