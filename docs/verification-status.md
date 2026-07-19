@@ -12,7 +12,7 @@ This page records the live checks completed on July 19, 2026. It separates the p
 | Doubleword | Passed | Qwen3-VL returned structured visual observations and approved the final safety audit |
 | ai& | Passed | `qwen/qwen3.6-27b` returned a schema-valid `AnalysisResult` |
 | Nosana | Passed | One RTX 3090 job, model loaded, direct synthesis returned valid `audio/wav` with RIFF/WAVE headers |
-| Daytona public API | Passed in demo mode | `/health` and `/openapi.json` returned 200; `/live/redeploy-smoke` returned `ready` |
+| Daytona public API | Passed in demo mode | Fresh allowlisted deployment cloned and installed successfully; `/health` and `/openapi.json` returned 200; `/live/redeploy-smoke` returned `ready` |
 | Daytona outbound sponsor transport | Passed with explicit allowlist | A fresh credential-free sandbox reached all four production provider hosts over TLS/HTTP; no connection resets |
 | Daytona authenticated live sponsor mode | Pending credentialed public rerun | The current public sandbox intentionally remains credential-free in demo mode |
 | Physical iPhone workflow | Pending iOS team | Camera capture, Apple Speech, audio playback, and barge-in require an iPhone and the Swift client |
@@ -33,7 +33,9 @@ No provider returned a demo fixture or silent fallback.
 
 ## Public frontend handoff
 
-The current Daytona sandbox runs commit `1c97e924331d4c309121a39d69f967dfceb180b6` in explicit demo mode. It contains no sponsor or control-plane credentials.
+The current Daytona sandbox runs commit `791ada1b7325fbdab866506a071f3d8e3d021524`
+in explicit demo mode with the seven-host build/runtime allowlist. It contains
+no sponsor or control-plane credentials.
 
 Share `.daytona/FRONTEND_HANDOFF.txt` privately with Kenji and Brian. The ignored file contains the signed base URL, REST endpoints, WebSocket URL construction, expiry, and a smoke command. Do not copy the Daytona API key into the iOS app.
 

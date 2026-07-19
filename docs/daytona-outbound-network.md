@@ -163,8 +163,10 @@ A fresh sandbox containing only the four runtime hosts also received
 `Forbidden` from `sandbox.git.clone`. Adding `github.com`, `pypi.org`, and
 `files.pythonhosted.org` is therefore required for this deployer despite those
 services appearing in Daytona's essential-services table. The failed sandbox
-was deleted; the next deployment should use the complete seven-host list at
-creation.
+was deleted. A replacement created with the complete seven-host list cloned the
+exact pushed commit, installed Python dependencies, returned HTTP 200 from
+`/health` and `/openapi.json`, and completed the public WebSocket `ready`
+handshake.
 
 Daytona also exposes the organization-level
 `sandbox-default-limited-network-egress` API and the organization object exposes
